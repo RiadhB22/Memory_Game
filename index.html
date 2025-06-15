@@ -72,14 +72,14 @@
   </style>
 </head>
 <body>
-  <h1>Jeu Memory : 20 Paires Complémentaires</h1>
+  <h1>Jeu Memory : TAKWEEN </h1>
   <div id="stats">Score : <span id="score">0</span> | Coups : <span id="moves">0</span></div>
   <div id="game"></div>
 
   <script>
     const backImage = "files/verso.jpg";
 
-    // Générer 20 paires (images : 1-1/1-2 à 20-1/20-2)
+    // GÃ©nÃ©rer 20 paires (images : 1-1/1-2 Ã  20-1/20-2)
     const pairs = [];
     for (let i = 1; i <= 20; i++) {
       pairs.push({
@@ -89,7 +89,7 @@
       });
     }
 
-    // Mélange des cartes
+    // MÃ©lange des cartes
     let cards = [];
     pairs.forEach(pair => {
       cards.push({ id: pair.id, img: pair.img1 });
