@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Memory - 20 Paires avec Score</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #stats {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+    #game {
+      display: grid;
+      grid-template-columns: repeat(8, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    .card {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      cursor: pointer;
+      perspective: 1000px;
+    }
+
+    .inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+    }
+
+    .flipped .inner {
+      transform: rotateY(180deg);
+    }
+
+    .front, .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+    }
+
+    .front {
+      transform: rotateY(180deg);
+    }
+
+    .back {
+      transform: rotateY(0deg);
+    }
+
+    .front img, .back img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .matched {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jeu Memory : 20 Paires Complémentaires</h1>
+  <div id="stats">Score : <span id="score">0</span> | Coups : <span id="moves">0</span></div>
+  <div id="game"></div>
+
+  <script>
+    const backImage = "files/verso.jpg";
+
+    // Générer 20 paires (images : 1-1/1-2 à 20-1/20-2)
+    const pairs = [];
+    for (let i = 1; i <= 20; i++) {
+      pairs.push({
+        id: i,
+        img1: `files/${i}-1.jpg`,
+        img2: `files/${i}-2.jpg`
+      });
+    }
+
+    // Mélange des cartes
+    let cards = [];
+    pairs.forEach(pair => {
+      cards.push({ id: pair.id, img: pair.img1 });
+      cards.push({ id: pair.id, img: pair.img2 });
+    });
+    cards = cards.sort(() => 0.5 - Math.random());
+
+    const game = document.getElementById("game");
+    const scoreSpan = document.getElementById("score");
+    const movesSpan = document.getElementById("moves");
+
+    let firstCard = null;
+    let secondCard = null;
+    let lock = false;
+    let score = 0;
+    let moves = 0;
+
+    cards.forEach(cardData => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const inner = document.createElement("div");
+      inner.className = "inner";
+      card.appendChild(inner);
+
+      const front = document.createElement("div");
+      front.className = "front";
+      const frontImg = document.createElement("img");
+      frontImg.src = cardData.img;
+      front.appendChild(frontImg);
+
+      const back = document.createElement("div");
+      back.className = "back";
+      const backImg = document.createElement("img");
+      backImg.src = backImage;
+      back.appendChild(backImg);
+
+      inner.appendChild(front);
+      inner.appendChild(back);
+
+      card.dataset.id = cardData.id;
+      game.appendChild(card);
+
+      card.addEventListener("click", () => {
+        if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+
+        card.classList.add("flipped");
+
+        if (!firstCard) {
+          firstCard = card;
+        } else {
+          secondCard = card;
+          lock = true;
+          moves++;
+          movesSpan.textContent = moves;
+
+          setTimeout(() => {
+            if (
+              firstCard.dataset.id === secondCard.dataset.id &&
+              firstCard !== secondCard
+            ) {
+              firstCard.classList.add("matched");
+              secondCard.classList.add("matched");
+              score++;
+              scoreSpan.textContent = score;
+            } else {
+              firstCard.classList.remove("flipped");
+              secondCard.classList.remove("flipped");
+            }
+            firstCard = null;
+            secondCard = null;
+            lock = false;
+          }, 800);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
