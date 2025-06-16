@@ -1,28 +1,50 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Memory Multijoueur</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jeu Memory : TAKWEEN</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8f9fa;
+      color: #333;
+      margin: 0;
+      padding: 0;
       text-align: center;
-      background: #eef;
+    }
+    header {
+      padding: 20px;
+      background-color: #e3f2fd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     h1 {
-      margin-top: 20px;
+      margin: 0;
+      font-size: 28px;
+      color: #0d47a1;
+    }
+    .info {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .info div {
+      margin: 5px 15px;
     }
     #game {
       display: grid;
       grid-template-columns: repeat(8, 100px);
       gap: 10px;
       justify-content: center;
-      margin-top: 20px;
+      margin: 20px auto;
+      max-width: 850px;
     }
     .card {
       width: 100px;
       height: 100px;
-      perspective: 800px;
+      perspective: 1000px;
       cursor: pointer;
     }
     .inner {
@@ -30,7 +52,7 @@
       width: 100%;
       height: 100%;
       transform-style: preserve-3d;
-      transition: transform 0.6s;
+      transition: transform 0.5s;
     }
     .flipped .inner {
       transform: rotateY(180deg);
@@ -40,7 +62,7 @@
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
-      border-radius: 6px;
+      border-radius: 8px;
     }
     .front {
       transform: rotateY(180deg);
@@ -49,211 +71,156 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      border-radius: 8px;
     }
     .matched {
       opacity: 0.4;
       pointer-events: none;
     }
-    .info {
-      margin-top: 10px;
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      background-color: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
-    #players {
-      display: flex;
-      justify-content: center;
-      gap: 50px;
-      font-size: 18px;
-      margin-top: 10px;
-    }
-    .turn {
-      font-weight: bold;
-      color: green;
+    button:hover {
+      background-color: #1976d2;
     }
   </style>
 </head>
 <body>
-  <h1>Memory Multijoueur</h1>
+  <header>
+    <h1>Jeu Memory : TAKWEEN</h1>
+  </header>
 
   <div class="info">
-    <p>Date : <span id="date"></span> | Heure : <span id="heure"></span> | Durée : <span id="temps"></span></p>
+    <div>🕒 Heure de début : <span id="start-time"></span></div>
+    <div>⏱ Durée : <span id="duration">0s</span></div>
+    <div>👤 Joueur 1 : <span id="player1">?</span> (<span id="score1">0</span>)</div>
+    <div>👤 Joueur 2 : <span id="player2">?</span> (<span id="score2">0</span>)</div>
+    <div>🎯 Coups : <span id="moves">0</span></div>
   </div>
 
-  <div id="players">
-    <div id="player1">👤 Joueur 1 : <span id="name1"></span> - Score: <span id="score1">0</span></div>
-    <div id="player2">👤 Joueur 2 : <span id="name2"></span> - Score: <span id="score2">0</span></div>
+  <div>
+    <button onclick="resetGame()">🔁 Réinitialiser la partie</button>
   </div>
 
   <div id="game"></div>
 
-  <audio id="wrong-sound" src="https://www.soundjay.com/button/sounds/button-10.mp3"></audio>
-
-  <!-- Firebase (CDN) -->
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-database-compat.js"></script>
+  <audio id="sound1" src="sound1.mp3"></audio>
+  <audio id="sound2" src="sound2.mp3"></audio>
 
   <script>
-    // Initialiser Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
-      authDomain: "memorygame-70305.firebaseapp.com",
-      databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "memorygame-70305",
-      storageBucket: "memorygame-70305.firebasestorage.app",
-      messagingSenderId: "700177553228",
-      appId: "1:700177553228:web:4a750936d2866eeface1e9"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // Variables globales
-    let playerName = prompt("Ton nom ?");
-    let playerNumber = null;
-    let gameId = "default-game";
-    let startTime = Date.now();
-    let flipped = [];
-    let lock = false;
     const backImage = "files/verso.jpg";
+    const TOTAL_PAIRS = 20;
 
-    const pairs = [];
-    for (let i = 1; i <= 20; i++) {
-      pairs.push({ id: i, img1: `files/${i}-1.jpg`, img2: `files/${i}-2.jpg` });
-    }
+    const pairs = Array.from({ length: TOTAL_PAIRS }, (_, i) => ({
+      id: i + 1,
+      img1: `files/${i + 1}-1.jpg`,
+      img2: `files/${i + 1}-2.jpg`
+    }));
 
-    // Créer la grille
-    const game = document.getElementById("game");
-    const allCards = [];
-    pairs.forEach(p => {
-      allCards.push({ id: p.id, img: p.img1 });
-      allCards.push({ id: p.id, img: p.img2 });
+    const cards = [];
+    pairs.forEach(pair => {
+      cards.push({ id: pair.id, img: pair.img1 });
+      cards.push({ id: pair.id, img: pair.img2 });
     });
-    allCards.sort(() => 0.5 - Math.random());
 
-    // Affichage de l'heure et compteur de durée
-    const updateTime = () => {
+    cards.sort(() => 0.5 - Math.random());
+
+    let firstCard = null;
+    let secondCard = null;
+    let lock = false;
+    let currentSound = 1;
+    let moves = 0;
+    let score = [0, 0];
+    let turn = 0; // 0 = joueur 1, 1 = joueur 2
+    let startTime = new Date();
+
+    document.getElementById("start-time").textContent = startTime.toLocaleTimeString();
+
+    const durationElement = document.getElementById("duration");
+    setInterval(() => {
       const now = new Date();
-      document.getElementById("date").textContent = now.toLocaleDateString();
-      document.getElementById("heure").textContent = now.toLocaleTimeString();
-      const secs = Math.floor((Date.now() - startTime) / 1000);
-      document.getElementById("temps").textContent = `${secs} s`;
-    };
-    setInterval(updateTime, 1000);
+      const seconds = Math.floor((now - startTime) / 1000);
+      durationElement.textContent = seconds + "s";
+    }, 1000);
 
-    // Charger ou créer les joueurs
-    db.ref(gameId + "/players").once("value", snap => {
-      let data = snap.val() || {};
-      if (!data.player1) {
-        db.ref(gameId + "/players/player1").set({ name: playerName, score: 0 });
-        playerNumber = 1;
-      } else if (!data.player2) {
-        db.ref(gameId + "/players/player2").set({ name: playerName, score: 0 });
-        playerNumber = 2;
-      } else {
-        alert("Partie déjà pleine !");
-        return;
-      }
-      initGame();
-    });
+    const game = document.getElementById("game");
 
-    // Initialiser le jeu
-    function initGame() {
-      db.ref(gameId + "/turn").set(1);
-      allCards.forEach((cardData, index) => {
-        const card = document.createElement("div");
-        card.className = "card";
-        const inner = document.createElement("div");
-        inner.className = "inner";
+    cards.forEach(cardData => {
+      const card = document.createElement("div");
+      card.className = "card";
 
-        const front = document.createElement("div");
-        front.className = "front";
-        const imgFront = document.createElement("img");
-        imgFront.src = cardData.img;
-        front.appendChild(imgFront);
+      const inner = document.createElement("div");
+      inner.className = "inner";
+      card.appendChild(inner);
 
-        const back = document.createElement("div");
-        back.className = "back";
-        const imgBack = document.createElement("img");
-        imgBack.src = backImage;
-        back.appendChild(imgBack);
+      const front = document.createElement("div");
+      front.className = "front";
+      const frontImg = document.createElement("img");
+      frontImg.src = cardData.img;
+      front.appendChild(frontImg);
 
-        inner.appendChild(front);
-        inner.appendChild(back);
-        card.appendChild(inner);
-        card.dataset.id = cardData.id;
-        card.dataset.index = index;
-        game.appendChild(card);
+      const back = document.createElement("div");
+      back.className = "back";
+      const backImg = document.createElement("img");
+      backImg.src = backImage;
+      back.appendChild(backImg);
 
-        card.addEventListener("click", () => handleFlip(card));
-      });
+      inner.appendChild(front);
+      inner.appendChild(back);
 
-      db.ref(gameId + "/players").on("value", snap => {
-        const players = snap.val();
-        document.getElementById("name1").textContent = players?.player1?.name || "Attente...";
-        document.getElementById("score1").textContent = players?.player1?.score || 0;
-        document.getElementById("name2").textContent = players?.player2?.name || "Attente...";
-        document.getElementById("score2").textContent = players?.player2?.score || 0;
-      });
+      card.dataset.id = cardData.id;
+      game.appendChild(card);
 
-      db.ref(gameId + "/turn").on("value", snap => {
-        const turn = snap.val();
-        document.getElementById("player1").classList.toggle("turn", turn === 1);
-        document.getElementById("player2").classList.toggle("turn", turn === 2);
-      });
-    }
-
-    function handleFlip(card) {
-      if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
-
-      db.ref(gameId + "/turn").once("value", snap => {
-        const turn = snap.val();
-        if (turn !== playerNumber) {
-          document.getElementById("wrong-sound").play();
-          return;
-        }
+      card.addEventListener("click", () => {
+        if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
 
         card.classList.add("flipped");
-        flipped.push(card);
+        document.getElementById("sound" + currentSound).play();
+        currentSound = currentSound === 1 ? 2 : 1;
 
-        if (flipped.length === 2) {
+        if (!firstCard) {
+          firstCard = card;
+        } else {
+          secondCard = card;
           lock = true;
+          moves++;
+          document.getElementById("moves").textContent = moves;
+
           setTimeout(() => {
-            const [c1, c2] = flipped;
-            if (c1.dataset.id === c2.dataset.id) {
-              c1.classList.add("matched");
-              c2.classList.add("matched");
-              updateScore();
+            if (firstCard.dataset.id === secondCard.dataset.id) {
+              firstCard.classList.add("matched");
+              secondCard.classList.add("matched");
+              score[turn]++;
+              document.getElementById("score" + (turn + 1)).textContent = score[turn];
             } else {
-              c1.classList.remove("flipped");
-              c2.classList.remove("flipped");
-              changeTurn();
+              firstCard.classList.remove("flipped");
+              secondCard.classList.remove("flipped");
+              turn = 1 - turn;
             }
-            flipped = [];
+            firstCard = null;
+            secondCard = null;
             lock = false;
           }, 800);
         }
       });
+    });
+
+    function resetGame() {
+      window.location.reload();
     }
 
-    function updateScore() {
-      const ref = db.ref(`${gameId}/players/player${playerNumber}/score`);
-      ref.once("value", snap => {
-        const score = snap.val() || 0;
-        ref.set(score + 1);
-        checkGameEnd();
-      });
-    }
-
-    function changeTurn() {
-      db.ref(gameId + "/turn").once("value", snap => {
-        const turn = snap.val();
-        db.ref(gameId + "/turn").set(turn === 1 ? 2 : 1);
-      });
-    }
-
-    function checkGameEnd() {
-      const matched = document.querySelectorAll(".matched").length;
-      if (matched === allCards.length) {
-        setTimeout(() => alert("🎉 Fin du jeu !"), 1000);
-      }
-    }
+    // Demande noms des joueurs
+    const p1 = prompt("Nom du joueur 1 ?") || "Joueur 1";
+    const p2 = prompt("Nom du joueur 2 ?") || "Joueur 2";
+    document.getElementById("player1").textContent = p1;
+    document.getElementById("player2").textContent = p2;
   </script>
 </body>
 </html>
