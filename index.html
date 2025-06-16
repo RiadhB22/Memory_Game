@@ -1,171 +1,259 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Memory - 20 Paires avec Score</title>
+  <meta charset="UTF-8" />
+  <title>Memory Multijoueur</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      background: #f0f0f0;
+      background: #eef;
     }
     h1 {
       margin-top: 20px;
-    }
-    #stats {
-      margin-top: 10px;
-      font-size: 18px;
     }
     #game {
       display: grid;
       grid-template-columns: repeat(8, 100px);
       gap: 10px;
       justify-content: center;
-      margin-top: 30px;
+      margin-top: 20px;
     }
     .card {
       width: 100px;
       height: 100px;
-      border-radius: 8px;
+      perspective: 800px;
       cursor: pointer;
-      perspective: 1000px;
     }
-
     .inner {
+      position: relative;
       width: 100%;
       height: 100%;
-      position: relative;
       transform-style: preserve-3d;
       transition: transform 0.6s;
     }
-
     .flipped .inner {
       transform: rotateY(180deg);
     }
-
     .front, .back {
       position: absolute;
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
-      border-radius: 8px;
+      border-radius: 6px;
     }
-
     .front {
       transform: rotateY(180deg);
     }
-
-    .back {
-      transform: rotateY(0deg);
-    }
-
     .front img, .back img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-
     .matched {
-      opacity: 0.5;
+      opacity: 0.4;
       pointer-events: none;
+    }
+    .info {
+      margin-top: 10px;
+    }
+    #players {
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    .turn {
+      font-weight: bold;
+      color: green;
     }
   </style>
 </head>
 <body>
-  <h1>Jeu Memory : TAKWEEN </h1>
-  <div id="stats">Score : <span id="score">0</span> | Coups : <span id="moves">0</span></div>
+  <h1>Memory Multijoueur</h1>
+
+  <div class="info">
+    <p>Date : <span id="date"></span> | Heure : <span id="heure"></span> | Durée : <span id="temps"></span></p>
+  </div>
+
+  <div id="players">
+    <div id="player1">👤 Joueur 1 : <span id="name1"></span> - Score: <span id="score1">0</span></div>
+    <div id="player2">👤 Joueur 2 : <span id="name2"></span> - Score: <span id="score2">0</span></div>
+  </div>
+
   <div id="game"></div>
 
+  <audio id="wrong-sound" src="https://www.soundjay.com/button/sounds/button-10.mp3"></audio>
+
+  <!-- Firebase (CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-database-compat.js"></script>
+
   <script>
+    // Initialiser Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
+      authDomain: "memorygame-70305.firebaseapp.com",
+      databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "memorygame-70305",
+      storageBucket: "memorygame-70305.firebasestorage.app",
+      messagingSenderId: "700177553228",
+      appId: "1:700177553228:web:4a750936d2866eeface1e9"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Variables globales
+    let playerName = prompt("Ton nom ?");
+    let playerNumber = null;
+    let gameId = "default-game";
+    let startTime = Date.now();
+    let flipped = [];
+    let lock = false;
     const backImage = "files/verso.jpg";
 
-    // Générer 20 paires (images : 1-1/1-2 à 20-1/20-2)
     const pairs = [];
     for (let i = 1; i <= 20; i++) {
-      pairs.push({
-        id: i,
-        img1: `files/${i}-1.jpg`,
-        img2: `files/${i}-2.jpg`
+      pairs.push({ id: i, img1: `files/${i}-1.jpg`, img2: `files/${i}-2.jpg` });
+    }
+
+    // Créer la grille
+    const game = document.getElementById("game");
+    const allCards = [];
+    pairs.forEach(p => {
+      allCards.push({ id: p.id, img: p.img1 });
+      allCards.push({ id: p.id, img: p.img2 });
+    });
+    allCards.sort(() => 0.5 - Math.random());
+
+    // Affichage de l'heure et compteur de durée
+    const updateTime = () => {
+      const now = new Date();
+      document.getElementById("date").textContent = now.toLocaleDateString();
+      document.getElementById("heure").textContent = now.toLocaleTimeString();
+      const secs = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById("temps").textContent = `${secs} s`;
+    };
+    setInterval(updateTime, 1000);
+
+    // Charger ou créer les joueurs
+    db.ref(gameId + "/players").once("value", snap => {
+      let data = snap.val() || {};
+      if (!data.player1) {
+        db.ref(gameId + "/players/player1").set({ name: playerName, score: 0 });
+        playerNumber = 1;
+      } else if (!data.player2) {
+        db.ref(gameId + "/players/player2").set({ name: playerName, score: 0 });
+        playerNumber = 2;
+      } else {
+        alert("Partie déjà pleine !");
+        return;
+      }
+      initGame();
+    });
+
+    // Initialiser le jeu
+    function initGame() {
+      db.ref(gameId + "/turn").set(1);
+      allCards.forEach((cardData, index) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const inner = document.createElement("div");
+        inner.className = "inner";
+
+        const front = document.createElement("div");
+        front.className = "front";
+        const imgFront = document.createElement("img");
+        imgFront.src = cardData.img;
+        front.appendChild(imgFront);
+
+        const back = document.createElement("div");
+        back.className = "back";
+        const imgBack = document.createElement("img");
+        imgBack.src = backImage;
+        back.appendChild(imgBack);
+
+        inner.appendChild(front);
+        inner.appendChild(back);
+        card.appendChild(inner);
+        card.dataset.id = cardData.id;
+        card.dataset.index = index;
+        game.appendChild(card);
+
+        card.addEventListener("click", () => handleFlip(card));
+      });
+
+      db.ref(gameId + "/players").on("value", snap => {
+        const players = snap.val();
+        document.getElementById("name1").textContent = players?.player1?.name || "Attente...";
+        document.getElementById("score1").textContent = players?.player1?.score || 0;
+        document.getElementById("name2").textContent = players?.player2?.name || "Attente...";
+        document.getElementById("score2").textContent = players?.player2?.score || 0;
+      });
+
+      db.ref(gameId + "/turn").on("value", snap => {
+        const turn = snap.val();
+        document.getElementById("player1").classList.toggle("turn", turn === 1);
+        document.getElementById("player2").classList.toggle("turn", turn === 2);
       });
     }
 
-    // Mélange des cartes
-    let cards = [];
-    pairs.forEach(pair => {
-      cards.push({ id: pair.id, img: pair.img1 });
-      cards.push({ id: pair.id, img: pair.img2 });
-    });
-    cards = cards.sort(() => 0.5 - Math.random());
+    function handleFlip(card) {
+      if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
 
-    const game = document.getElementById("game");
-    const scoreSpan = document.getElementById("score");
-    const movesSpan = document.getElementById("moves");
-
-    let firstCard = null;
-    let secondCard = null;
-    let lock = false;
-    let score = 0;
-    let moves = 0;
-
-    cards.forEach(cardData => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const inner = document.createElement("div");
-      inner.className = "inner";
-      card.appendChild(inner);
-
-      const front = document.createElement("div");
-      front.className = "front";
-      const frontImg = document.createElement("img");
-      frontImg.src = cardData.img;
-      front.appendChild(frontImg);
-
-      const back = document.createElement("div");
-      back.className = "back";
-      const backImg = document.createElement("img");
-      backImg.src = backImage;
-      back.appendChild(backImg);
-
-      inner.appendChild(front);
-      inner.appendChild(back);
-
-      card.dataset.id = cardData.id;
-      game.appendChild(card);
-
-      card.addEventListener("click", () => {
-        if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+      db.ref(gameId + "/turn").once("value", snap => {
+        const turn = snap.val();
+        if (turn !== playerNumber) {
+          document.getElementById("wrong-sound").play();
+          return;
+        }
 
         card.classList.add("flipped");
+        flipped.push(card);
 
-        if (!firstCard) {
-          firstCard = card;
-        } else {
-          secondCard = card;
+        if (flipped.length === 2) {
           lock = true;
-          moves++;
-          movesSpan.textContent = moves;
-
           setTimeout(() => {
-            if (
-              firstCard.dataset.id === secondCard.dataset.id &&
-              firstCard !== secondCard
-            ) {
-              firstCard.classList.add("matched");
-              secondCard.classList.add("matched");
-              score++;
-              scoreSpan.textContent = score;
+            const [c1, c2] = flipped;
+            if (c1.dataset.id === c2.dataset.id) {
+              c1.classList.add("matched");
+              c2.classList.add("matched");
+              updateScore();
             } else {
-              firstCard.classList.remove("flipped");
-              secondCard.classList.remove("flipped");
+              c1.classList.remove("flipped");
+              c2.classList.remove("flipped");
+              changeTurn();
             }
-            firstCard = null;
-            secondCard = null;
+            flipped = [];
             lock = false;
           }, 800);
         }
       });
-    });
+    }
+
+    function updateScore() {
+      const ref = db.ref(`${gameId}/players/player${playerNumber}/score`);
+      ref.once("value", snap => {
+        const score = snap.val() || 0;
+        ref.set(score + 1);
+        checkGameEnd();
+      });
+    }
+
+    function changeTurn() {
+      db.ref(gameId + "/turn").once("value", snap => {
+        const turn = snap.val();
+        db.ref(gameId + "/turn").set(turn === 1 ? 2 : 1);
+      });
+    }
+
+    function checkGameEnd() {
+      const matched = document.querySelectorAll(".matched").length;
+      if (matched === allCards.length) {
+        setTimeout(() => alert("🎉 Fin du jeu !"), 1000);
+      }
+    }
   </script>
 </body>
 </html>
