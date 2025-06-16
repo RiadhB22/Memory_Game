@@ -27,14 +27,8 @@
       overflow-x: auto;
       gap: 10px;
     }
-    #loading {
-      text-align: center;
-      font-size: 20px;
-      color: #333;
-      margin-top: 50px;
-    }
     #game {
-      display: none;
+      display: grid;
       grid-template-columns: repeat(8, 100px);
       gap: 10px;
       justify-content: center;
@@ -93,15 +87,25 @@
       background: #2980b9;
     }
     .active-player {
-      font-weight: bold;
       color: green;
+      font-weight: bold;
+    }
+    .hand-icon {
+      font-size: 16px;
+      margin-left: 5px;
+    }
+    #loading {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 50px;
+      color: #888;
     }
   </style>
 </head>
 <body>
   <h1>Jeu Memory : TAKWEEN</h1>
-
-  <div id="info-bar">
+  <div id="loading">Chargement des images...</div>
+  <div id="info-bar" style="display:none">
     <span id="player1-name">Joueur 1</span>
     <span>Score : <span id="score1">0</span></span>
     <span>🕒 Heure de début : <span id="start-time"></span></span>
@@ -111,12 +115,21 @@
     <span id="player2-name">Joueur 2</span>
     <button onclick="resetGame()">Réinitialiser la partie</button>
   </div>
+  <div id="game" style="display:none"></div>
 
-  <div id="loading">Chargement des images...</div>
-  <div id="game"></div>
+  <audio id="bg-music" src="files/bg.mp3" loop autoplay hidden></audio>
+  <audio id="win-sound" src="files/win.mp3" hidden></audio>
 
   <script>
     const backImage = "files/verso.jpg";
+    const startSound = new Audio("files/start.mp3");
+    const sound1 = new Audio("files/sound1.mp3");
+    const sound2 = new Audio("files/sound2.mp3");
+    const bgMusic = document.getElementById("bg-music");
+    const winSound = document.getElementById("win-sound");
+    startSound.loop = true;
+    startSound.play();
+
     const pairs = [];
     for (let i = 1; i <= 20; i++) {
       pairs.push({ id: i, img1: `files/${i}-1.jpg`, img2: `files/${i}-2.jpg` });
@@ -130,82 +143,30 @@
     cards = cards.sort(() => 0.5 - Math.random());
 
     const game = document.getElementById("game");
-    let firstCard = null, secondCard = null, lock = false;
-    let score1 = 0, score2 = 0, moveCount = 0, turn = 1;
-
-    const sound1 = new Audio("files/sound1.mp3");
-    const sound2 = new Audio("files/sound2.mp3");
-
-    const playerKey = "joueur";
-    const myId = sessionStorage.getItem("player") || (localStorage.getItem("joueur1") && !localStorage.getItem("joueur2") ? "joueur2" : "joueur1");
-    if (!sessionStorage.getItem("player")) {
-      const name = prompt(`Nom du ${myId === "joueur1" ? "Joueur 1" : "Joueur 2"} :`);
-      localStorage.setItem(myId, name);
-      sessionStorage.setItem("player", myId);
-    }
-
-    const player1 = localStorage.getItem("joueur1") || "Joueur 1";
-    const player2 = localStorage.getItem("joueur2") || "Joueur 2";
-
-    const player1Span = document.getElementById("player1-name");
-    const player2Span = document.getElementById("player2-name");
-    function updateActivePlayer() {
-      player1Span.classList.toggle("active-player", turn === 1);
-      player2Span.classList.toggle("active-player", turn === 2);
-    }
-
-    player1Span.textContent = player1;
-    player2Span.textContent = player2;
-
-    const start = new Date();
-    document.getElementById("start-time").textContent = start.toLocaleTimeString();
-
-    setInterval(() => {
-      const now = new Date();
-      const duration = Math.floor((now - start) / 1000);
-      document.getElementById("timer").textContent = duration + "s";
-    }, 1000);
-
-    function resetGame() {
-      sessionStorage.clear();
-      localStorage.clear();
-      location.reload();
-    }
-
-    function updateScores() {
-      document.getElementById("score1").textContent = score1;
-      document.getElementById("score2").textContent = score2;
-    }
-
-    function updateMoves() {
-      document.getElementById("move-count").textContent = moveCount;
-    }
-
+    const loadingDiv = document.getElementById("loading");
     let loadedImages = 0;
     const totalImages = cards.length + 1;
 
     function imageLoaded() {
       loadedImages++;
       if (loadedImages === totalImages) {
-        document.getElementById("loading").style.display = "none";
+        startSound.pause();
+        bgMusic.play();
+        loadingDiv.style.display = "none";
+        document.getElementById("info-bar").style.display = "flex";
         game.style.display = "grid";
-        updateActivePlayer();
+        askPlayerName();
       }
     }
 
-    const preloadImage = (src) => {
-      const img = new Image();
-      img.onload = imageLoaded;
-      img.src = src;
-    };
+    const backImg = new Image();
+    backImg.onload = imageLoaded;
+    backImg.src = backImage;
 
-    preloadImage(backImage);
-    cards.forEach(card => preloadImage(card.img));
-
+    const cardElements = [];
     cards.forEach(cardData => {
       const card = document.createElement("div");
       card.className = "card";
-
       const inner = document.createElement("div");
       inner.className = "inner";
       card.appendChild(inner);
@@ -214,57 +175,134 @@
       front.className = "front";
       const frontImg = document.createElement("img");
       frontImg.src = cardData.img;
+      frontImg.onload = imageLoaded;
       front.appendChild(frontImg);
 
       const back = document.createElement("div");
       back.className = "back";
-      const backImg = document.createElement("img");
-      backImg.src = backImage;
-      back.appendChild(backImg);
+      const backImgClone = document.createElement("img");
+      backImgClone.src = backImage;
+      back.appendChild(backImgClone);
 
       inner.appendChild(back);
       inner.appendChild(front);
 
       card.dataset.id = cardData.id;
-      game.appendChild(card);
-
-      card.addEventListener("click", () => {
-        if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
-
-        card.classList.add("flipped");
-        (!firstCard ? sound1 : sound2).play();
-
-        if (!firstCard) {
-          firstCard = card;
-        } else {
-          secondCard = card;
-          lock = true;
-          moveCount++;
-          updateMoves();
-
-          setTimeout(() => {
-            if (firstCard.dataset.id === secondCard.dataset.id) {
-              firstCard.classList.add("matched");
-              secondCard.classList.add("matched");
-              if (turn === 1) {
-                score1++;
-              } else {
-                score2++;
-              }
-              updateScores();
-            } else {
-              firstCard.classList.remove("flipped");
-              secondCard.classList.remove("flipped");
-              turn = turn === 1 ? 2 : 1;
-              updateActivePlayer();
-            }
-            firstCard = null;
-            secondCard = null;
-            lock = false;
-          }, 800);
-        }
-      });
+      cardElements.push(card);
     });
+
+    let firstCard = null, secondCard = null, lock = false;
+    let score1 = 0, score2 = 0, moveCount = 0, turn = 1;
+
+    function askPlayerName() {
+      const existingPlayer = sessionStorage.getItem("player");
+      if (!existingPlayer) {
+        const name = prompt("Entrez votre nom :").trim();
+        if (!name) {
+          alert("Le nom ne peut pas être vide.");
+          return location.reload();
+        }
+
+        if (!localStorage.getItem("joueur1")) {
+          localStorage.setItem("joueur1", name);
+          sessionStorage.setItem("player", "joueur1");
+        } else if (!localStorage.getItem("joueur2")) {
+          localStorage.setItem("joueur2", name);
+          sessionStorage.setItem("player", "joueur2");
+        } else {
+          alert("Deux joueurs sont déjà inscrits sur cet appareil.");
+          return;
+        }
+      }
+
+      const player1 = localStorage.getItem("joueur1") || "Joueur 1";
+      const player2 = localStorage.getItem("joueur2") || "Joueur 2";
+      document.getElementById("player1-name").textContent = player1;
+      document.getElementById("player2-name").textContent = player2;
+      highlightPlayer();
+      setupGame();
+    }
+
+    function highlightPlayer() {
+      const p1 = document.getElementById("player1-name");
+      const p2 = document.getElementById("player2-name");
+      p1.classList.remove("active-player");
+      p2.classList.remove("active-player");
+      p1.textContent = localStorage.getItem("joueur1") || "Joueur 1";
+      p2.textContent = localStorage.getItem("joueur2") || "Joueur 2";
+      if (turn === 1) {
+        p1.classList.add("active-player");
+        p1.innerHTML += ' <span class="hand-icon">👉</span>';
+      } else {
+        p2.classList.add("active-player");
+        p2.innerHTML += ' <span class="hand-icon">👉</span>';
+      }
+    }
+
+    const start = new Date();
+    document.getElementById("start-time").textContent = start.toLocaleTimeString();
+    setInterval(() => {
+      const now = new Date();
+      const duration = Math.floor((now - start) / 1000);
+      document.getElementById("timer").textContent = duration + "s";
+    }, 1000);
+
+    function updateScores() {
+      document.getElementById("score1").textContent = score1;
+      document.getElementById("score2").textContent = score2;
+    }
+    function updateMoves() {
+      document.getElementById("move-count").textContent = moveCount;
+    }
+
+    function resetGame() {
+      sessionStorage.clear();
+      localStorage.clear();
+      location.reload();
+    }
+
+    function checkEndGame() {
+      if (document.querySelectorAll('.matched').length === cards.length) {
+        winSound.play();
+      }
+    }
+
+    function setupGame() {
+      cardElements.forEach(card => {
+        game.appendChild(card);
+        card.addEventListener("click", () => {
+          if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+          card.classList.add("flipped");
+          (!firstCard ? sound1 : sound2).play();
+
+          if (!firstCard) {
+            firstCard = card;
+          } else {
+            secondCard = card;
+            lock = true;
+            moveCount++;
+            updateMoves();
+            setTimeout(() => {
+              if (firstCard.dataset.id === secondCard.dataset.id) {
+                firstCard.classList.add("matched");
+                secondCard.classList.add("matched");
+                if (turn === 1) score1++; else score2++;
+                updateScores();
+                checkEndGame();
+              } else {
+                firstCard.classList.remove("flipped");
+                secondCard.classList.remove("flipped");
+                turn = turn === 1 ? 2 : 1;
+                highlightPlayer();
+              }
+              firstCard = null;
+              secondCard = null;
+              lock = false;
+            }, 800);
+          }
+        });
+      });
+    }
   </script>
 </body>
 </html>
