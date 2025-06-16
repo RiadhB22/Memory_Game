@@ -2,36 +2,30 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jeu Memory : TAKWEEN</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f8f9fa;
-      color: #333;
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
       margin: 0;
       padding: 0;
-      text-align: center;
-    }
-    header {
-      padding: 20px;
-      background-color: #e3f2fd;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     h1 {
-      margin: 0;
-      font-size: 28px;
-      color: #0d47a1;
+      text-align: center;
+      margin: 20px 0;
+      color: #444;
     }
-    .info {
+    #info-bar {
       display: flex;
-      justify-content: space-around;
-      flex-wrap: wrap;
-      padding: 10px;
-      font-size: 16px;
-    }
-    .info div {
-      margin: 5px 15px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: #fff;
+      border-bottom: 2px solid #ddd;
+      font-size: 14px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 10px;
     }
     #game {
       display: grid;
@@ -44,15 +38,15 @@
     .card {
       width: 100px;
       height: 100px;
-      perspective: 1000px;
       cursor: pointer;
+      perspective: 600px;
     }
     .inner {
-      position: relative;
       width: 100%;
       height: 100%;
+      transition: transform 0.6s;
       transform-style: preserve-3d;
-      transition: transform 0.5s;
+      position: relative;
     }
     .flipped .inner {
       transform: rotateY(180deg);
@@ -62,95 +56,110 @@
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
-      border-radius: 8px;
+      border-radius: 10px;
     }
     .front {
+      transform: rotateY(0deg);
+      z-index: 2;
+    }
+    .back {
       transform: rotateY(180deg);
+      z-index: 1;
     }
     .front img, .back img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 8px;
     }
     .matched {
-      opacity: 0.4;
+      opacity: 0.5;
       pointer-events: none;
     }
     button {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 16px;
-      background-color: #2196f3;
-      color: white;
+      padding: 5px 10px;
+      background: #3498db;
+      color: #fff;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
     button:hover {
-      background-color: #1976d2;
+      background: #2980b9;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Jeu Memory : TAKWEEN</h1>
-  </header>
+  <h1>Jeu Memory : TAKWEEN</h1>
 
-  <div class="info">
-    <div>🕒 Heure de début : <span id="start-time"></span></div>
-    <div>⏱ Durée : <span id="duration">0s</span></div>
-    <div>👤 Joueur 1 : <span id="player1">?</span> (<span id="score1">0</span>)</div>
-    <div>👤 Joueur 2 : <span id="player2">?</span> (<span id="score2">0</span>)</div>
-    <div>🎯 Coups : <span id="moves">0</span></div>
-  </div>
-
-  <div>
-    <button onclick="resetGame()">🔁 Réinitialiser la partie</button>
+  <div id="info-bar">
+    <span id="player1-name">Joueur 1</span>
+    <span>Score : <span id="score1">0</span></span>
+    <span>🕒 Heure de début : <span id="start-time"></span></span>
+    <span>🎯 Coups : <span id="move-count">0</span></span>
+    <span>⏱ Durée : <span id="timer">0s</span></span>
+    <span>Score : <span id="score2">0</span></span>
+    <span id="player2-name">Joueur 2</span>
+    <button onclick="resetGame()">Réinitialiser la partie</button>
   </div>
 
   <div id="game"></div>
 
-  <audio id="sound1" src="sound1.mp3"></audio>
-  <audio id="sound2" src="sound2.mp3"></audio>
-
   <script>
     const backImage = "files/verso.jpg";
-    const TOTAL_PAIRS = 20;
+    const pairs = [];
+    for (let i = 1; i <= 20; i++) {
+      pairs.push({ id: i, img1: `files/${i}-1.jpg`, img2: `files/${i}-2.jpg` });
+    }
 
-    const pairs = Array.from({ length: TOTAL_PAIRS }, (_, i) => ({
-      id: i + 1,
-      img1: `files/${i + 1}-1.jpg`,
-      img2: `files/${i + 1}-2.jpg`
-    }));
-
-    const cards = [];
+    let cards = [];
     pairs.forEach(pair => {
       cards.push({ id: pair.id, img: pair.img1 });
       cards.push({ id: pair.id, img: pair.img2 });
     });
-
-    cards.sort(() => 0.5 - Math.random());
-
-    let firstCard = null;
-    let secondCard = null;
-    let lock = false;
-    let currentSound = 1;
-    let moves = 0;
-    let score = [0, 0];
-    let turn = 0; // 0 = joueur 1, 1 = joueur 2
-    let startTime = new Date();
-
-    document.getElementById("start-time").textContent = startTime.toLocaleTimeString();
-
-    const durationElement = document.getElementById("duration");
-    setInterval(() => {
-      const now = new Date();
-      const seconds = Math.floor((now - startTime) / 1000);
-      durationElement.textContent = seconds + "s";
-    }, 1000);
+    cards = cards.sort(() => 0.5 - Math.random());
 
     const game = document.getElementById("game");
+    let firstCard = null, secondCard = null, lock = false;
+    let score1 = 0, score2 = 0, moveCount = 0, turn = 1;
+
+    const sound1 = new Audio("files/sound1.mp3");
+    const sound2 = new Audio("files/sound2.mp3");
+
+    const player1 = sessionStorage.getItem("joueur1") || prompt("Nom du Joueur 1 :");
+    sessionStorage.setItem("joueur1", player1);
+    document.getElementById("player1-name").textContent = player1;
+
+    let player2 = sessionStorage.getItem("joueur2");
+    if (!player2) {
+      do {
+        player2 = prompt("Nom du Joueur 2 :");
+      } while (player2 === player1);
+      sessionStorage.setItem("joueur2", player2);
+    }
+    document.getElementById("player2-name").textContent = player2;
+
+    const start = new Date();
+    document.getElementById("start-time").textContent = start.toLocaleTimeString();
+
+    setInterval(() => {
+      const now = new Date();
+      const duration = Math.floor((now - start) / 1000);
+      document.getElementById("timer").textContent = duration + "s";
+    }, 1000);
+
+    function resetGame() {
+      sessionStorage.clear();
+      location.reload();
+    }
+
+    function updateScores() {
+      document.getElementById("score1").textContent = score1;
+      document.getElementById("score2").textContent = score2;
+    }
+
+    function updateMoves() {
+      document.getElementById("move-count").textContent = moveCount;
+    }
 
     cards.forEach(cardData => {
       const card = document.createElement("div");
@@ -172,8 +181,8 @@
       backImg.src = backImage;
       back.appendChild(backImg);
 
-      inner.appendChild(front);
       inner.appendChild(back);
+      inner.appendChild(front);
 
       card.dataset.id = cardData.id;
       game.appendChild(card);
@@ -182,27 +191,30 @@
         if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
 
         card.classList.add("flipped");
-        document.getElementById("sound" + currentSound).play();
-        currentSound = currentSound === 1 ? 2 : 1;
+        (!firstCard ? sound1 : sound2).play();
 
         if (!firstCard) {
           firstCard = card;
         } else {
           secondCard = card;
           lock = true;
-          moves++;
-          document.getElementById("moves").textContent = moves;
+          moveCount++;
+          updateMoves();
 
           setTimeout(() => {
             if (firstCard.dataset.id === secondCard.dataset.id) {
               firstCard.classList.add("matched");
               secondCard.classList.add("matched");
-              score[turn]++;
-              document.getElementById("score" + (turn + 1)).textContent = score[turn];
+              if (turn === 1) {
+                score1++;
+              } else {
+                score2++;
+              }
+              updateScores();
             } else {
               firstCard.classList.remove("flipped");
               secondCard.classList.remove("flipped");
-              turn = 1 - turn;
+              turn = turn === 1 ? 2 : 1;
             }
             firstCard = null;
             secondCard = null;
@@ -211,16 +223,6 @@
         }
       });
     });
-
-    function resetGame() {
-      window.location.reload();
-    }
-
-    // Demande noms des joueurs
-    const p1 = prompt("Nom du joueur 1 ?") || "Joueur 1";
-    const p2 = prompt("Nom du joueur 2 ?") || "Joueur 2";
-    document.getElementById("player1").textContent = p1;
-    document.getElementById("player2").textContent = p2;
   </script>
 </body>
 </html>
