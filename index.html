@@ -59,11 +59,11 @@
       border-radius: 10px;
     }
     .front {
-      transform: rotateY(0deg);
+      transform: rotateY(180deg);
       z-index: 2;
     }
     .back {
-      transform: rotateY(180deg);
+      transform: rotateY(0deg);
       z-index: 1;
     }
     .front img, .back img {
@@ -93,11 +93,11 @@
 
   <div id="info-bar">
     <span id="player1-name">Joueur 1</span>
-    <span>Score : <span id="score1">0</span></span>
+    <span id="score1-container">Score : <span id="score1">0</span></span>
     <span>🕒 Heure de début : <span id="start-time"></span></span>
     <span>🎯 Coups : <span id="move-count">0</span></span>
     <span>⏱ Durée : <span id="timer">0s</span></span>
-    <span>Score : <span id="score2">0</span></span>
+    <span id="score2-container">Score : <span id="score2">0</span></span>
     <span id="player2-name">Joueur 2</span>
     <button onclick="resetGame()">Réinitialiser la partie</button>
   </div>
@@ -125,17 +125,22 @@
     const sound1 = new Audio("files/sound1.mp3");
     const sound2 = new Audio("files/sound2.mp3");
 
-    const player1 = sessionStorage.getItem("joueur1") || prompt("Nom du Joueur 1 :");
-    sessionStorage.setItem("joueur1", player1);
-    document.getElementById("player1-name").textContent = player1;
+    let player1 = localStorage.getItem("joueur1");
+    let player2 = localStorage.getItem("joueur2");
+    const playerSlot = !player1 ? "joueur1" : (!player2 ? "joueur2" : null);
 
-    let player2 = sessionStorage.getItem("joueur2");
-    if (!player2) {
-      do {
-        player2 = prompt("Nom du Joueur 2 :");
-      } while (player2 === player1);
-      sessionStorage.setItem("joueur2", player2);
+    if (!playerSlot) {
+      alert("Deux joueurs sont déjà connectés dans ce navigateur.");
+    } else {
+      const name = prompt(`Nom du ${playerSlot === "joueur1" ? "Joueur 1" : "Joueur 2"} :`);
+      localStorage.setItem(playerSlot, name);
+      location.reload();
     }
+
+    player1 = localStorage.getItem("joueur1") || "Joueur 1";
+    player2 = localStorage.getItem("joueur2") || "Joueur 2";
+
+    document.getElementById("player1-name").textContent = player1;
     document.getElementById("player2-name").textContent = player2;
 
     const start = new Date();
@@ -148,7 +153,7 @@
     }, 1000);
 
     function resetGame() {
-      sessionStorage.clear();
+      localStorage.clear();
       location.reload();
     }
 
@@ -181,8 +186,8 @@
       backImg.src = backImage;
       back.appendChild(backImg);
 
-      inner.appendChild(back);
       inner.appendChild(front);
+      inner.appendChild(back);
 
       card.dataset.id = cardData.id;
       game.appendChild(card);
