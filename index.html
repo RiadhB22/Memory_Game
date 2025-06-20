@@ -90,7 +90,11 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    button:hover {
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    button:hover:enabled {
       background: #2980b9;
     }
     .active-player {
@@ -111,28 +115,76 @@
 </head>
 <body>
   <h1>Jeu Memory : TAKWEEN</h1>
-  <!-- ... autres éléments inchangés ... -->
+  <div id="info-bar">
+    <span id="player1-name">Joueur 1</span>
+    <span>Score : <span id="score1">0</span></span>
+    <span>🕒 Heure de début : <span id="start-time"></span></span>
+    <span>🎯 Coups : <span id="move-count">0</span></span>
+    <span>⏱ Durée : <span id="timer">0s</span></span>
+    <span>Score : <span id="score2">0</span></span>
+    <span id="player2-name">Joueur 2</span>
+    <button id="reset-button">🔄 Réinitialiser</button>
+  </div>
+  <div id="game"></div>
+
   <script type="module">
-    // ... imports Firebase inchangés ...
-
+    const backImage = "files/verso.jpg";
+    const cards = [];
+    let flippedCard = null;
+    let moveCount = 0;
     let currentPlayer = "joueur1";
-    let scores = { joueur1: 0, joueur2: 0 };
+    const scores = { joueur1: 0, joueur2: 0 };
     let isProcessing = false;
+    let timerInterval;
+    const startTime = new Date();
+    document.getElementById("start-time").textContent = startTime.toLocaleTimeString();
 
-    function switchTurn() {
-      currentPlayer = currentPlayer === "joueur1" ? "joueur2" : "joueur1";
-      document.getElementById("player1-name").classList.toggle("active-player", currentPlayer === "joueur1");
-      document.getElementById("player2-name").classList.toggle("active-player", currentPlayer === "joueur2");
+    for (let i = 1; i <= 20; i++) {
+      cards.push({ id: i, img: `files/${i}-1.jpg` });
+      cards.push({ id: i, img: `files/${i}-2.jpg` });
+    }
+    cards.sort(() => 0.5 - Math.random());
+
+    const game = document.getElementById("game");
+    const player1 = document.getElementById("player1-name");
+    const player2 = document.getElementById("player2-name");
+    const score1 = document.getElementById("score1");
+    const score2 = document.getElementById("score2");
+    const timerEl = document.getElementById("timer");
+    const moveEl = document.getElementById("move-count");
+    const resetBtn = document.getElementById("reset-button");
+
+    const flip1 = new Audio("files/flip1.mp3");
+    const flip2 = new Audio("files/flip2.mp3");
+
+    if (sessionStorage.getItem("player") === "joueur2") {
+      resetBtn.disabled = true;
     }
 
     function vibrateDevice() {
-      if ("vibrate" in navigator) {
-        navigator.vibrate([100, 50, 100]);
-      }
+      if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
     }
 
-    function startGame() {
-      // ... initialisation inchangée ...
+    function updateScores() {
+      score1.textContent = scores.joueur1;
+      score2.textContent = scores.joueur2;
+    }
+
+    function switchTurn() {
+      currentPlayer = currentPlayer === "joueur1" ? "joueur2" : "joueur1";
+      player1.classList.toggle("active-player", currentPlayer === "joueur1");
+      player2.classList.toggle("active-player", currentPlayer === "joueur2");
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        const now = new Date();
+        const seconds = Math.floor((now - startTime) / 1000);
+        timerEl.textContent = `${seconds}s`;
+      }, 1000);
+    }
+
+    function createBoard() {
       cards.forEach(cardData => {
         const card = document.createElement("div");
         card.className = "card";
@@ -160,7 +212,7 @@
 
         card.addEventListener("click", () => {
           if (isProcessing || card.classList.contains("flipped") || card.classList.contains("matched")) return;
-          if (sessionStorage.getItem("playerRole") !== currentPlayer) return;
+          if (sessionStorage.getItem("player") !== currentPlayer) return;
 
           card.classList.add("flipped");
           (flippedCard ? flip2 : flip1).play();
@@ -170,7 +222,7 @@
           } else {
             isProcessing = true;
             moveCount++;
-            document.getElementById("move-count").textContent = moveCount;
+            moveEl.textContent = moveCount;
 
             setTimeout(() => {
               if (flippedCard.dataset.id === card.dataset.id) {
@@ -179,7 +231,6 @@
                 scores[currentPlayer]++;
                 updateScores();
                 vibrateDevice();
-                checkEndGame();
               } else {
                 flippedCard.classList.remove("flipped");
                 card.classList.remove("flipped");
@@ -192,6 +243,16 @@
         });
       });
     }
+
+    resetBtn.addEventListener("click", () => {
+      location.reload();
+    });
+
+    player1.textContent = sessionStorage.getItem("nomJoueur1") || "Joueur 1";
+    player2.textContent = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
+    player1.classList.add("active-player");
+    createBoard();
+    startTimer();
   </script>
 </body>
 </html>
