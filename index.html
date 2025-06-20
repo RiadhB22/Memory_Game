@@ -90,7 +90,7 @@
       color: green;
       font-weight: bold;
     }
-    #loading {
+    #loading, #waiting {
       text-align: center;
       font-size: 20px;
       margin-top: 50px;
@@ -101,6 +101,7 @@
 <body>
   <h1>Jeu Memory : TAKWEEN</h1>
   <div id="loading">Chargement des images...</div>
+  <div id="waiting" style="display:none">En attente d’un deuxième joueur...</div>
   <div id="info-bar" style="display:none">
     <span id="player1-name">Joueur 1</span><span id="score1-block">Score : <span id="score1">0</span></span>
     <span>🕒 Heure de début : <span id="start-time"></span></span>
@@ -111,16 +112,12 @@
   </div>
   <div id="game" style="display:none"></div>
 
-  <audio id="bg-music" src="files/bg.mp3" loop autoplay hidden></audio>
-  <audio id="win-sound" src="files/win.mp3" hidden></audio>
-  <audio id="start-sound" src="files/start.mp3" hidden></audio>
   <audio id="flip1" src="files/flip1.mp3" hidden></audio>
   <audio id="flip2" src="files/flip2.mp3" hidden></audio>
-  <audio id="end-sound" src="files/end.mp3" hidden></audio>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    import { getDatabase, ref, get, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
@@ -138,6 +135,7 @@
     const game = document.getElementById("game");
     const loading = document.getElementById("loading");
     const infoBar = document.getElementById("info-bar");
+    const waiting = document.getElementById("waiting");
 
     const backImage = "files/verso.jpg";
     const cards = [];
@@ -150,7 +148,6 @@
     let flippedCard = null;
     let lock = false;
     let moveCount = 0;
-
     const flip1 = document.getElementById("flip1");
     const flip2 = document.getElementById("flip2");
 
@@ -160,127 +157,125 @@
       loaded++;
       if (loaded === total) {
         loading.style.display = "none";
-        infoBar.style.display = "flex";
-        game.style.display = "grid";
       }
     }
-
-    const preload = src => {
-      const img = new Image();
-      img.onload = imageLoaded;
-      img.src = src;
-    };
+    const preload = src => { const img = new Image(); img.onload = imageLoaded; img.src = src; };
     preload(backImage);
     cards.forEach(card => preload(card.img));
 
-    cards.forEach(cardData => {
-      const card = document.createElement("div");
-      card.className = "card";
+    function startGame() {
+      infoBar.style.display = "flex";
+      game.style.display = "grid";
 
-      const inner = document.createElement("div");
-      inner.className = "inner";
-      card.appendChild(inner);
+      cards.forEach(cardData => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const inner = document.createElement("div");
+        inner.className = "inner";
+        card.appendChild(inner);
 
-      const front = document.createElement("div");
-      front.className = "front";
-      const frontImg = document.createElement("img");
-      frontImg.src = cardData.img;
-      front.appendChild(frontImg);
+        const front = document.createElement("div");
+        front.className = "front";
+        const frontImg = document.createElement("img");
+        frontImg.src = cardData.img;
+        front.appendChild(frontImg);
 
-      const back = document.createElement("div");
-      back.className = "back";
-      const backImg = document.createElement("img");
-      backImg.src = backImage;
-      back.appendChild(backImg);
+        const back = document.createElement("div");
+        back.className = "back";
+        const backImg = document.createElement("img");
+        backImg.src = backImage;
+        back.appendChild(backImg);
 
-      inner.appendChild(back);
-      inner.appendChild(front);
+        inner.appendChild(back);
+        inner.appendChild(front);
 
-      card.dataset.id = cardData.id;
-      game.appendChild(card);
+        card.dataset.id = cardData.id;
+        game.appendChild(card);
 
-      card.addEventListener("click", () => {
-        if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
-        card.classList.add("flipped");
-        flippedCard ? flip2.play() : flip1.play();
+        card.addEventListener("click", () => {
+          if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+          card.classList.add("flipped");
+          flippedCard ? flip2.play() : flip1.play();
 
-        if (!flippedCard) {
-          flippedCard = card;
-        } else {
-          lock = true;
-          moveCount++;
-          document.getElementById("move-count").textContent = moveCount;
-
-          setTimeout(() => {
-            if (flippedCard.dataset.id === card.dataset.id) {
-              flippedCard.classList.add("matched");
-              card.classList.add("matched");
-            } else {
-              flippedCard.classList.remove("flipped");
-              card.classList.remove("flipped");
-            }
-            flippedCard = null;
-            lock = false;
-          }, 800);
-        }
+          if (!flippedCard) {
+            flippedCard = card;
+          } else {
+            lock = true;
+            moveCount++;
+            document.getElementById("move-count").textContent = moveCount;
+            setTimeout(() => {
+              if (flippedCard.dataset.id === card.dataset.id) {
+                flippedCard.classList.add("matched");
+                card.classList.add("matched");
+              } else {
+                flippedCard.classList.remove("flipped");
+                card.classList.remove("flipped");
+              }
+              flippedCard = null;
+              lock = false;
+            }, 800);
+          }
+        });
       });
-    });
 
-    function resetGame() {
-      sessionStorage.clear();
-      localStorage.clear();
-      location.reload();
+      document.getElementById("start-time").textContent = new Date().toLocaleTimeString();
+      const start = new Date();
+      setInterval(() => {
+        const now = new Date();
+        const duration = Math.floor((now - start) / 1000);
+        document.getElementById("timer").textContent = duration + "s";
+      }, 1000);
     }
 
-    document.getElementById("start-time").textContent = new Date().toLocaleTimeString();
-    setInterval(() => {
-      const now = new Date();
-      const start = new Date();
-      const duration = Math.floor((now - start) / 1000);
-      document.getElementById("timer").textContent = duration + "s";
-    }, 1000);
-
     async function assignPlayer() {
-      const localId = localStorage.getItem("playerId") || crypto.randomUUID();
-      localStorage.setItem("playerId", localId);
+      let playerId = localStorage.getItem("playerId");
+      let playerRole = sessionStorage.getItem("playerRole");
+
+      if (playerId && playerRole) return;
 
       const snapshot = await get(ref(db, 'players'));
       const players = snapshot.exists() ? snapshot.val() : {};
 
-      const localRole = sessionStorage.getItem("playerRole");
-      if (localRole && players[localRole] && players[localRole].id === localId) {
-        updatePlayerUI(localRole, players[localRole].name);
-        return localRole;
-      }
-
-      if (players.joueur1?.id === localId || players.joueur2?.id === localId) {
-        const role = players.joueur1?.id === localId ? "joueur1" : "joueur2";
-        sessionStorage.setItem("playerRole", role);
-        updatePlayerUI(role, players[role].name);
-        return role;
-      }
-
       if (players.joueur1 && players.joueur2) {
         alert("Deux joueurs sont déjà connectés.");
-        return null;
+        return;
       }
 
       const name = prompt("Entrez votre nom :").trim();
       if (!name) return location.reload();
 
-      const roleToAssign = players.joueur1 ? "joueur2" : "joueur1";
-      await set(ref(db, `players/${roleToAssign}`), { name, id: localId });
-      sessionStorage.setItem("playerRole", roleToAssign);
-      updatePlayerUI(roleToAssign, name);
-      return roleToAssign;
+      const id = crypto.randomUUID();
+      const role = players.joueur1 ? "joueur2" : "joueur1";
+      await set(ref(db, `players/${role}`), { name, id });
+
+      localStorage.setItem("playerId", id);
+      sessionStorage.setItem("playerRole", role);
     }
 
-    function updatePlayerUI(role, name) {
-      if (role === "joueur1") document.getElementById("player1-name").textContent = name;
-      if (role === "joueur2") document.getElementById("player2-name").textContent = name;
+    function updateUIOnPlayers(players) {
+      if (players.joueur1) document.getElementById("player1-name").textContent = players.joueur1.name;
+      if (players.joueur2) document.getElementById("player2-name").textContent = players.joueur2.name;
+
+      if (players.joueur1 && players.joueur2) {
+        waiting.style.display = "none";
+        startGame();
+      } else {
+        waiting.style.display = "block";
+      }
     }
 
     assignPlayer();
+    onValue(ref(db, 'players'), snapshot => {
+      const players = snapshot.val() || {};
+      updateUIOnPlayers(players);
+    });
+
+    window.resetGame = function () {
+      remove(ref(db, "players"));
+      localStorage.clear();
+      sessionStorage.clear();
+      location.reload();
+    };
   </script>
 </body>
 </html>
