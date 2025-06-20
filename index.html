@@ -90,10 +90,6 @@
       color: green;
       font-weight: bold;
     }
-    .hand-icon {
-      font-size: 16px;
-      margin-left: 5px;
-    }
     #loading {
       text-align: center;
       font-size: 20px;
@@ -124,7 +120,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getDatabase, ref, get, set, onValue, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
@@ -138,6 +134,112 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
+    const game = document.getElementById("game");
+    const loading = document.getElementById("loading");
+    const infoBar = document.getElementById("info-bar");
+
+    const backImage = "files/verso.jpg";
+    const cards = [];
+    for (let i = 1; i <= 20; i++) {
+      cards.push({ id: i, img: `files/${i}-1.jpg` });
+      cards.push({ id: i, img: `files/${i}-2.jpg` });
+    }
+    cards.sort(() => 0.5 - Math.random());
+
+    let flippedCard = null;
+    let lock = false;
+    let moveCount = 0;
+
+    const flip1 = document.getElementById("flip1");
+    const flip2 = document.getElementById("flip2");
+
+    let loaded = 0;
+    const total = cards.length + 1; // +1 for back image
+    function imageLoaded() {
+      loaded++;
+      if (loaded === total) {
+        loading.style.display = "none";
+        infoBar.style.display = "flex";
+        game.style.display = "grid";
+      }
+    }
+
+    const preload = src => {
+      const img = new Image();
+      img.onload = imageLoaded;
+      img.src = src;
+    };
+    preload(backImage);
+    cards.forEach(card => preload(card.img));
+
+    cards.forEach(cardData => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const inner = document.createElement("div");
+      inner.className = "inner";
+      card.appendChild(inner);
+
+      const front = document.createElement("div");
+      front.className = "front";
+      const frontImg = document.createElement("img");
+      frontImg.src = cardData.img;
+      front.appendChild(frontImg);
+
+      const back = document.createElement("div");
+      back.className = "back";
+      const backImg = document.createElement("img");
+      backImg.src = backImage;
+      back.appendChild(backImg);
+
+      inner.appendChild(back);
+      inner.appendChild(front);
+
+      card.dataset.id = cardData.id;
+      game.appendChild(card);
+
+      card.addEventListener("click", () => {
+        if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+        card.classList.add("flipped");
+
+        flippedCard ? flip2.play() : flip1.play();
+
+        if (!flippedCard) {
+          flippedCard = card;
+        } else {
+          lock = true;
+          moveCount++;
+          document.getElementById("move-count").textContent = moveCount;
+
+          setTimeout(() => {
+            if (flippedCard.dataset.id === card.dataset.id) {
+              flippedCard.classList.add("matched");
+              card.classList.add("matched");
+            } else {
+              flippedCard.classList.remove("flipped");
+              card.classList.remove("flipped");
+            }
+            flippedCard = null;
+            lock = false;
+          }, 800);
+        }
+      });
+    });
+
+    function resetGame() {
+      sessionStorage.clear();
+      localStorage.clear();
+      location.reload();
+    }
+
+    document.getElementById("start-time").textContent = new Date().toLocaleTimeString();
+    setInterval(() => {
+      const now = new Date();
+      const start = new Date();
+      const duration = Math.floor((now - start) / 1000);
+      document.getElementById("timer").textContent = duration + "s";
+    }, 1000);
 
     async function assignPlayer() {
       const snapshot = await get(ref(db, 'players'));
@@ -159,20 +261,17 @@
       if (!players.joueur1) {
         await set(ref(db, 'players/joueur1'), { name, id: localId });
         sessionStorage.setItem("playerRole", "joueur1");
+        document.getElementById("player1-name").textContent = name;
         return "joueur1";
       } else if (!players.joueur2) {
         await set(ref(db, 'players/joueur2'), { name, id: localId });
         sessionStorage.setItem("playerRole", "joueur2");
+        document.getElementById("player2-name").textContent = name;
         return "joueur2";
       }
     }
 
-    assignPlayer().then(role => {
-      if (!role) return;
-      document.getElementById("start-sound").play();
-      console.log("Connecté comme", role);
-      // TODO: synchroniser l'état du jeu ici entre les deux joueurs
-    });
+    assignPlayer();
   </script>
 </body>
 </html>
