@@ -120,7 +120,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
@@ -155,7 +155,7 @@
     const flip2 = document.getElementById("flip2");
 
     let loaded = 0;
-    const total = cards.length + 1; // +1 for back image
+    const total = cards.length + 1;
     function imageLoaded() {
       loaded++;
       if (loaded === total) {
@@ -202,7 +202,6 @@
       card.addEventListener("click", () => {
         if (lock || card.classList.contains("flipped") || card.classList.contains("matched")) return;
         card.classList.add("flipped");
-
         flippedCard ? flip2.play() : flip1.play();
 
         if (!flippedCard) {
@@ -242,13 +241,24 @@
     }, 1000);
 
     async function assignPlayer() {
-      const snapshot = await get(ref(db, 'players'));
-      const players = snapshot.exists() ? snapshot.val() : {};
-      const localRole = sessionStorage.getItem("playerRole");
       const localId = localStorage.getItem("playerId") || crypto.randomUUID();
       localStorage.setItem("playerId", localId);
 
-      if (localRole && players[localRole] && players[localRole].id === localId) return localRole;
+      const snapshot = await get(ref(db, 'players'));
+      const players = snapshot.exists() ? snapshot.val() : {};
+
+      const localRole = sessionStorage.getItem("playerRole");
+      if (localRole && players[localRole] && players[localRole].id === localId) {
+        updatePlayerUI(localRole, players[localRole].name);
+        return localRole;
+      }
+
+      if (players.joueur1?.id === localId || players.joueur2?.id === localId) {
+        const role = players.joueur1?.id === localId ? "joueur1" : "joueur2";
+        sessionStorage.setItem("playerRole", role);
+        updatePlayerUI(role, players[role].name);
+        return role;
+      }
 
       if (players.joueur1 && players.joueur2) {
         alert("Deux joueurs sont déjà connectés.");
@@ -258,17 +268,16 @@
       const name = prompt("Entrez votre nom :").trim();
       if (!name) return location.reload();
 
-      if (!players.joueur1) {
-        await set(ref(db, 'players/joueur1'), { name, id: localId });
-        sessionStorage.setItem("playerRole", "joueur1");
-        document.getElementById("player1-name").textContent = name;
-        return "joueur1";
-      } else if (!players.joueur2) {
-        await set(ref(db, 'players/joueur2'), { name, id: localId });
-        sessionStorage.setItem("playerRole", "joueur2");
-        document.getElementById("player2-name").textContent = name;
-        return "joueur2";
-      }
+      const roleToAssign = players.joueur1 ? "joueur2" : "joueur1";
+      await set(ref(db, `players/${roleToAssign}`), { name, id: localId });
+      sessionStorage.setItem("playerRole", roleToAssign);
+      updatePlayerUI(roleToAssign, name);
+      return roleToAssign;
+    }
+
+    function updatePlayerUI(role, name) {
+      if (role === "joueur1") document.getElementById("player1-name").textContent = name;
+      if (role === "joueur2") document.getElementById("player2-name").textContent = name;
     }
 
     assignPlayer();
