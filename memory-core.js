@@ -2,17 +2,18 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-// Configuration Firebase (à remplacer par les valeurs de ton projet)
+// Configuration Firebase (copiée depuis ta console)
 const firebaseConfig = {
-  apiKey: "TA_CLE_API",
-  authDomain: "TON_PROJET.firebaseapp.com",
-  databaseURL: "https://TON_PROJET.firebaseio.com",
-  projectId: "TON_PROJET",
-  storageBucket: "TON_PROJET.appspot.com",
-  messagingSenderId: "TON_MESSAGING_ID",
-  appId: "TON_APP_ID"
+  apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
+  authDomain: "memorygame-70305.firebaseapp.com",
+  databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "memorygame-70305",
+  storageBucket: "memorygame-70305.firebasestorage.app",
+  messagingSenderId: "700177553228",
+  appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
+// Initialisation Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const gameRef = ref(db, 'game');
