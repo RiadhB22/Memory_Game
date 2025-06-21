@@ -2,13 +2,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-// Configuration Firebase (copiée depuis ta console)
+// Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
   authDomain: "memorygame-70305.firebaseapp.com",
   databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "memorygame-70305",
-  storageBucket: "memorygame-70305.firebasestorage.app",
+  storageBucket: "memorygame-70305.appspot.com",
   messagingSenderId: "700177553228",
   appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
@@ -18,6 +18,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const gameRef = ref(db, 'game');
 
+// ID session unique
 let sessionId = localStorage.getItem("memory_session_id");
 if (!sessionId) {
   sessionId = crypto.randomUUID();
@@ -25,6 +26,7 @@ if (!sessionId) {
 }
 sessionStorage.setItem("sessionId", sessionId);
 
+// Rôle joueur
 let player = sessionStorage.getItem("player");
 
 async function detectPlayerRole() {
@@ -56,19 +58,21 @@ async function detectPlayerRole() {
   alert("Deux joueurs sont déjà connectés.");
 }
 
+// Créer cartes (chemins des images dans 'files/')
 const images = [];
 for (let i = 1; i <= 20; i++) {
   images.push({ id: i, img: `files/${i}-1.jpg` });
   images.push({ id: i, img: `files/${i}-2.jpg` });
 }
-
 let cards = images.sort(() => 0.5 - Math.random());
 
+// Sons
 const sounds = {
   flip1: new Audio("files/flip1.mp3"),
   flip2: new Audio("files/flip2.mp3")
 };
 
+// Démarrer jeu
 await init();
 
 export async function init() {
@@ -99,7 +103,10 @@ function checkStart() {
           matched: [],
           flipped: [],
           moves: 0,
-          sessions: { joueur1: session1 },
+          sessions: {
+            joueur1: session1,
+            joueur2: data?.sessions?.joueur2 || null
+          },
           scores: { joueur1: 0, joueur2: 0 },
           timeStart: Date.now()
         };
@@ -116,11 +123,11 @@ function setupListeners() {
 
     const sessionId = sessionStorage.getItem("sessionId");
     if (data.sessions?.joueur1 === sessionId && player !== "joueur1") {
-      alert("Ce navigateur est déjà inscrit comme Joueur 1. Utilisez un autre navigateur pour Joueur 2.");
+      alert("Ce navigateur est déjà inscrit comme Joueur 1. Utilisez un autre navigateur.");
       return;
     }
     if (data.sessions?.joueur2 === sessionId && player !== "joueur2") {
-      alert("Ce navigateur est déjà inscrit comme Joueur 2. Utilisez un autre navigateur pour Joueur 1.");
+      alert("Ce navigateur est déjà inscrit comme Joueur 2. Utilisez un autre navigateur.");
       return;
     }
 
@@ -133,8 +140,8 @@ function renderGame(data) {
   const game = document.getElementById("game");
   game.innerHTML = "";
   data.board.forEach((card, index) => {
-    const isFlipped = data.flipped && data.flipped.includes(index);
-    const isMatched = data.matched && data.matched.includes(card.id);
+    const isFlipped = data.flipped?.includes(index);
+    const isMatched = data.matched?.includes(card.id);
     const cardEl = document.createElement("div");
     cardEl.className = "card";
     cardEl.dataset.index = index;
@@ -155,11 +162,11 @@ function renderGame(data) {
 async function handleCardClick(index, id) {
   const snap = await get(gameRef);
   const data = snap.val();
-  if (!data || data.turn !== player || (data.flipped && data.flipped.length >= 2)) return;
-  if (data.matched && data.matched.includes(id)) return;
-  if (data.flipped && data.flipped.includes(index)) return;
+  if (!data || data.turn !== player || (data.flipped?.length >= 2)) return;
+  if (data.matched?.includes(id)) return;
+  if (data.flipped?.includes(index)) return;
 
-  const newFlipped = data.flipped ? [...data.flipped, index] : [index];
+  const newFlipped = [...(data.flipped || []), index];
   sounds[newFlipped.length === 1 ? 'flip1' : 'flip2'].play();
 
   update(gameRef, { flipped: newFlipped });
@@ -174,7 +181,7 @@ function checkMatch(flippedIndices, data) {
   const c1 = data.board[i1];
   const c2 = data.board[i2];
 
-  let matched = data.matched || [];
+  let matched = [...(data.matched || [])];
   let scores = data.scores;
   let turn = data.turn;
   let move = data.moves + 1;
