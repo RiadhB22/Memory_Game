@@ -1,7 +1,20 @@
 // memory-core.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-const db = getDatabase();
+// Configuration Firebase (à remplacer par les valeurs de ton projet)
+const firebaseConfig = {
+  apiKey: "TA_CLE_API",
+  authDomain: "TON_PROJET.firebaseapp.com",
+  databaseURL: "https://TON_PROJET.firebaseio.com",
+  projectId: "TON_PROJET",
+  storageBucket: "TON_PROJET.appspot.com",
+  messagingSenderId: "TON_MESSAGING_ID",
+  appId: "TON_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 const gameRef = ref(db, 'game');
 
 let sessionId = localStorage.getItem("memory_session_id");
@@ -16,7 +29,6 @@ let player = sessionStorage.getItem("player");
 async function detectPlayerRole() {
   const snap = await get(gameRef);
   const data = snap.val();
-  const sessionId = sessionStorage.getItem("sessionId");
   const nom = prompt("Entrez votre nom :");
 
   if (!data) {
@@ -56,11 +68,13 @@ const sounds = {
   flip2: new Audio("files/flip2.mp3")
 };
 
+await init();
+
 export async function init() {
   await detectPlayerRole();
 
-  document.getElementById("player1-name").textContent = "??? " + (sessionStorage.getItem("nomJoueur1") || "Joueur 1");
-  document.getElementById("player2-name").textContent = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
+  document.getElementById("player1-name").textContent = "👤 " + (sessionStorage.getItem("nomJoueur1") || "Joueur 1") + " :";
+  document.getElementById("player2-name").textContent = "👤 " + (sessionStorage.getItem("nomJoueur2") || "Joueur 2") + " :";
   document.getElementById("reset-button").disabled = player !== 'joueur1';
 
   setupListeners();
@@ -108,6 +122,7 @@ function setupListeners() {
       alert("Ce navigateur est déjà inscrit comme Joueur 2. Utilisez un autre navigateur pour Joueur 1.");
       return;
     }
+
     renderGame(data);
     updateStatus(data);
   });
@@ -196,9 +211,6 @@ function updateStatus(data) {
   p2.classList.remove("active-player");
   if (data.turn === "joueur1") p1.classList.add("active-player");
   if (data.turn === "joueur2") p2.classList.add("active-player");
-
-  p1.textContent = (data.turn === 'joueur1' ? "??? " : "") + (sessionStorage.getItem("nomJoueur1") || "Joueur 1") + " : ";
-  p2.textContent = (data.turn === 'joueur2' ? "??? " : "") + (sessionStorage.getItem("nomJoueur2") || "Joueur 2") + " : ";
 }
 
 function setupResetButton() {
@@ -208,4 +220,3 @@ function setupResetButton() {
     window.location.reload();
   });
 }
-// Placeholder for memory-core.js
