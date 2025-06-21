@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-// Configuration Firebase
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
   authDomain: "memorygame-70305.firebaseapp.com",
@@ -13,12 +13,10 @@ const firebaseConfig = {
   appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
-// Initialisation Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const gameRef = ref(db, 'game');
 
-// ID session unique
 let sessionId = localStorage.getItem("memory_session_id");
 if (!sessionId) {
   sessionId = crypto.randomUUID();
@@ -26,7 +24,6 @@ if (!sessionId) {
 }
 sessionStorage.setItem("sessionId", sessionId);
 
-// Rôle joueur
 let player = sessionStorage.getItem("player");
 
 async function detectPlayerRole() {
@@ -34,14 +31,7 @@ async function detectPlayerRole() {
   const data = snap.val();
   const nom = prompt("Entrez votre nom :");
 
-  if (!data) {
-    sessionStorage.setItem("player", "joueur1");
-    sessionStorage.setItem("nomJoueur1", nom);
-    player = "joueur1";
-    return;
-  }
-
-  if (!data.sessions?.joueur1) {
+  if (!data || !data.sessions?.joueur1) {
     sessionStorage.setItem("player", "joueur1");
     sessionStorage.setItem("nomJoueur1", nom);
     player = "joueur1";
@@ -52,13 +42,16 @@ async function detectPlayerRole() {
     sessionStorage.setItem("player", "joueur2");
     sessionStorage.setItem("nomJoueur2", nom);
     player = "joueur2";
+    update(gameRef, {
+      'sessions/joueur2': sessionId,
+      'names/joueur2': nom
+    });
     return;
   }
 
   alert("Deux joueurs sont déjà connectés.");
 }
 
-// Créer cartes (chemins des images dans 'files/')
 const images = [];
 for (let i = 1; i <= 20; i++) {
   images.push({ id: i, img: `files/${i}-1.jpg` });
@@ -66,36 +59,36 @@ for (let i = 1; i <= 20; i++) {
 }
 let cards = images.sort(() => 0.5 - Math.random());
 
-// Sons
 const sounds = {
   flip1: new Audio("files/flip1.mp3"),
   flip2: new Audio("files/flip2.mp3")
 };
 
-// Démarrer jeu
 await init();
 
 export async function init() {
   await detectPlayerRole();
 
-  document.getElementById("player1-name").textContent = "👤 " + (sessionStorage.getItem("nomJoueur1") || "Joueur 1") + " :";
-  document.getElementById("player2-name").textContent = "👤 " + (sessionStorage.getItem("nomJoueur2") || "Joueur 2") + " :";
   document.getElementById("reset-button").disabled = player !== 'joueur1';
-
   setupListeners();
   setupResetButton();
   checkStart();
 }
 
 function checkStart() {
+  const waitingEl = document.getElementById("waiting-message");
+
   onValue(gameRef, snapshot => {
     const data = snapshot.val();
+
     if (!data || !data.started) {
+      waitingEl.style.display = "block";
+
       const nom1 = sessionStorage.getItem("nomJoueur1");
       const nom2 = sessionStorage.getItem("nomJoueur2");
       const session1 = sessionStorage.getItem("sessionId");
 
-      if (player === "joueur1" && nom1 && nom2) {
+      if (player === "joueur1" && nom1 && data?.sessions?.joueur2) {
         const gameData = {
           started: true,
           turn: "joueur1",
@@ -105,14 +98,21 @@ function checkStart() {
           moves: 0,
           sessions: {
             joueur1: session1,
-            joueur2: data?.sessions?.joueur2 || null
+            joueur2: data.sessions.joueur2
+          },
+          names: {
+            joueur1: nom1,
+            joueur2: data.names?.joueur2 || "Joueur 2"
           },
           scores: { joueur1: 0, joueur2: 0 },
           timeStart: Date.now()
         };
         set(gameRef, gameData);
       }
+      return;
     }
+
+    waitingEl.style.display = "none";
   });
 }
 
@@ -123,11 +123,11 @@ function setupListeners() {
 
     const sessionId = sessionStorage.getItem("sessionId");
     if (data.sessions?.joueur1 === sessionId && player !== "joueur1") {
-      alert("Ce navigateur est déjà inscrit comme Joueur 1. Utilisez un autre navigateur.");
+      alert("Ce navigateur est déjà inscrit comme Joueur 1.");
       return;
     }
     if (data.sessions?.joueur2 === sessionId && player !== "joueur2") {
-      alert("Ce navigateur est déjà inscrit comme Joueur 2. Utilisez un autre navigateur.");
+      alert("Ce navigateur est déjà inscrit comme Joueur 2.");
       return;
     }
 
@@ -215,10 +215,12 @@ function updateStatus(data) {
 
   const p1 = document.getElementById("player1-name");
   const p2 = document.getElementById("player2-name");
-  p1.classList.remove("active-player");
-  p2.classList.remove("active-player");
-  if (data.turn === "joueur1") p1.classList.add("active-player");
-  if (data.turn === "joueur2") p2.classList.add("active-player");
+
+  p1.classList.toggle("active-player", data.turn === "joueur1");
+  p2.classList.toggle("active-player", data.turn === "joueur2");
+
+  p1.textContent = `👤 ${data.names?.joueur1 || "Joueur 1"} :`;
+  p2.textContent = `👤 ${data.names?.joueur2 || "Joueur 2"} :`;
 }
 
 function setupResetButton() {
