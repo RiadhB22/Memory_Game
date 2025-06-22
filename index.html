@@ -1,33 +1,116 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    h1 {
+      background: #4caf50;
+      color: white;
+      padding: 10px 0;
+      margin: 0;
+    }
+    #status-bar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px;
+      background: #e0f7fa;
+      border-bottom: 2px solid #ccc;
+      flex-wrap: wrap;
+    }
+    #status-bar span {
+      margin: 5px;
+      font-weight: bold;
+    }
+    .active-player {
+      color: #d32f2f;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    #waiting-message {
+      margin: 15px;
+      font-size: 18px;
+      color: #d32f2f;
+    }
+    #game {
+      display: grid;
+      grid-template-columns: repeat(5, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .card {
+      width: 100px;
+      height: 100px;
+      perspective: 800px;
+    }
+    .inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+    }
+    .flipped {
+      transform: rotateY(180deg);
+    }
+    .front, .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+    }
+    .front img, .back img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .back {
+      transform: rotateY(180deg);
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #0288d1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #b0bec5;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Jeu Memory : TAKWEEN</h1>
-    <div class="status-bar">
-      <span id="player1-name">Joueur 1 :</span>
-      <span id="score1">Score : 0</span>
-      <span> | </span>
-      <span id="player2-name">Joueur 2 :</span>
-      <span id="score2">Score : 0</span>
-      <br>
-      <span>⏰ Heure de début : <span id="start-time">--:--</span></span>
-      <span> | ⏱️ Durée : <span id="timer">0s</span></span>
-      <span> | 🎯 Coups : <span id="move-count">0</span></span>
-      <button id="reset-button" disabled>🔄 Réinitialiser</button>
-    </div>
-    <div id="waiting-message" style="display:none; color: red; font-weight: bold;">
-      ⏳ En attente du deuxième joueur...
-    </div>
-  </header>
-  <main>
-    <div id="game" class="game-grid"></div>
-  </main>
+  <h1>🧠 Jeu Memory : TAKWEEN</h1>
+
+  <div id="status-bar">
+    <span id="player1-name">👤 Joueur 1 :</span>
+    <span id="score1">Score : 0</span>
+    <span id="player2-name">👤 Joueur 2 :</span>
+    <span id="score2">Score : 0</span>
+    <span>Coups : <span id="move-count">0</span></span>
+    <span>Temps : <span id="timer">0s</span></span>
+    <span>Début : <span id="start-time">--:--:--</span></span>
+    <button id="reset-button">🔄 Réinitialiser</button>
+  </div>
+
+  <div id="waiting-message" style="display: none;">⏳ En attente du deuxième joueur...</div>
+  <div id="game"></div>
+
   <script type="module" src="memory-core.js"></script>
 </body>
 </html>
