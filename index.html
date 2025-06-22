@@ -32,6 +32,13 @@
       color: green;
     }
 
+    #waiting-message {
+      text-align: center;
+      font-size: 18px;
+      color: #555;
+      margin-top: 20px;
+    }
+
     #game {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -111,6 +118,7 @@
     <button id="reset-button">🔁 Réinitialiser</button>
   </div>
 
+  <div id="waiting-message">⏳ En attente de la connexion d’un deuxième joueur...</div>
   <div id="game"></div>
 
   <script type="module" src="memory-core.js"></script>
