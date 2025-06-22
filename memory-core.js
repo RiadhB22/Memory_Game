@@ -1,4 +1,3 @@
-// memory-core.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
@@ -13,13 +12,14 @@ const firebaseConfig = {
   appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
+// Initialiser Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const gameRef = ref(db, 'game');
 
+// Session unique pour chaque joueur
 const sessionId = crypto.randomUUID();
 sessionStorage.setItem("sessionId", sessionId);
-
 let player;
 
 const waitingEl = document.getElementById("waiting-message");
@@ -29,14 +29,14 @@ async function detectPlayerRole() {
   const data = snap.val();
   const nom = prompt("Entrez votre nom :") || "Anonyme";
 
-  if (!data || !data.sessions || !data.sessions.joueur1) {
+  if (!data || !data.sessions?.joueur1) {
     player = "joueur1";
     await set(gameRef, {
       sessions: { joueur1: sessionId },
       noms: { joueur1: nom },
       started: false
     });
-  } else if (!data.sessions.joueur2) {
+  } else if (!data.sessions?.joueur2) {
     player = "joueur2";
     await update(gameRef, {
       sessions: { ...data.sessions, joueur2: sessionId },
@@ -72,7 +72,7 @@ async function init() {
     const data = snapshot.val();
     if (!data) return;
 
-    if (data.sessions.joueur1 && data.sessions.joueur2) {
+    if (data.sessions?.joueur1 && data.sessions?.joueur2) {
       waitingEl.style.display = "none";
     } else {
       waitingEl.style.display = "block";
@@ -112,8 +112,8 @@ function renderGame(data) {
   const game = document.getElementById("game");
   game.innerHTML = "";
   data.board.forEach((card, index) => {
-    const isFlipped = data.flipped && data.flipped.includes(index);
-    const isMatched = data.matched && data.matched.includes(card.id);
+    const isFlipped = data.flipped?.includes(index);
+    const isMatched = data.matched?.includes(card.id);
     const cardEl = document.createElement("div");
     cardEl.className = "card";
     cardEl.dataset.index = index;
@@ -122,7 +122,6 @@ function renderGame(data) {
         <div class="front"><img src="${card.img}" alt=""></div>
         <div class="back"><img src="files/verso.jpg" alt=""></div>
       </div>`;
-
     cardEl.addEventListener("click", () => {
       if (data.turn !== player || isFlipped || isMatched) return;
       handleCardClick(index, card.id);
