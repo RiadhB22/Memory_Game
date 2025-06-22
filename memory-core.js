@@ -39,15 +39,9 @@ init();
 
 async function init() {
   await detectPlayerRole();
-  updateNamesUI();
   setupListeners();
   setupResetButton();
   checkStart();
-}
-
-function updateNamesUI() {
-  document.getElementById("player1-name").textContent = `👤 ${sessionStorage.getItem("nomJoueur1") || "Joueur 1"} :`;
-  document.getElementById("player2-name").textContent = `👤 ${sessionStorage.getItem("nomJoueur2") || "Joueur 2"} :`;
 }
 
 async function detectPlayerRole() {
@@ -55,48 +49,43 @@ async function detectPlayerRole() {
   const data = snap.val();
   const nom = prompt("Entrez votre nom :");
 
+  const updates = {};
   if (!data) {
     sessionStorage.setItem("player", "joueur1");
-    sessionStorage.setItem("nomJoueur1", nom);
     player = "joueur1";
-    return;
-  }
-
-  if (!data.sessions?.joueur1) {
+    updates["sessions/joueur1"] = sessionId;
+    updates["sessions/nomJoueur1"] = nom;
+  } else if (!data.sessions?.joueur1) {
     sessionStorage.setItem("player", "joueur1");
-    sessionStorage.setItem("nomJoueur1", nom);
     player = "joueur1";
-    return;
-  }
-
-  if (!data.sessions?.joueur2) {
+    updates["sessions/joueur1"] = sessionId;
+    updates["sessions/nomJoueur1"] = nom;
+  } else if (!data.sessions?.joueur2) {
     sessionStorage.setItem("player", "joueur2");
-    sessionStorage.setItem("nomJoueur2", nom);
     player = "joueur2";
+    updates["sessions/joueur2"] = sessionId;
+    updates["sessions/nomJoueur2"] = nom;
+  } else {
+    alert("Deux joueurs sont déjà connectés.");
     return;
   }
 
-  alert("Deux joueurs sont déjà connectés.");
+  await update(gameRef, updates);
 }
 
 function checkStart() {
   onValue(gameRef, snapshot => {
     const data = snapshot.val();
     const waitingEl = document.getElementById("waiting-message");
-    const nom1 = sessionStorage.getItem("nomJoueur1");
-    const nom2 = sessionStorage.getItem("nomJoueur2");
 
     if (data && data.sessions?.joueur1 && data.sessions?.joueur2) {
-      waitingEl.style.display = "none";
-    } else if (player === "joueur1") {
+      if (waitingEl) waitingEl.style.display = "none";
+    } else if (player === "joueur1" && waitingEl) {
       waitingEl.style.display = "block";
     }
 
     if (!data || !data.started) {
-      if (player === "joueur1" && nom1 && nom2) {
-        const session1 = sessionStorage.getItem("sessionId");
-        const session2 = "waiting"; // placeholder for joueur2
-
+      if (data?.sessions?.joueur1 && data?.sessions?.joueur2 && player === "joueur1") {
         const gameData = {
           started: true,
           turn: "joueur1",
@@ -104,7 +93,7 @@ function checkStart() {
           matched: [],
           flipped: [],
           moves: 0,
-          sessions: { joueur1: session1 },
+          sessions: data.sessions,
           scores: { joueur1: 0, joueur2: 0 },
           timeStart: Date.now()
         };
@@ -126,10 +115,17 @@ function setupListeners() {
       return;
     }
 
-    updateNamesUI();
+    updateNamesUI(data);
     renderGame(data);
     updateStatus(data);
   });
+}
+
+function updateNamesUI(data) {
+  const nom1 = data.sessions?.nomJoueur1 || "Joueur 1";
+  const nom2 = data.sessions?.nomJoueur2 || "Joueur 2";
+  document.getElementById("player1-name").textContent = `👤 ${nom1} :`;
+  document.getElementById("player2-name").textContent = `👤 ${nom2} :`;
 }
 
 function renderGame(data) {
