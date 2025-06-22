@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Jeu Memory : TAKWEEN</title>
   <style>
     body {
@@ -13,10 +13,11 @@
 
     #status-bar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
       padding: 10px;
       background-color: #fff;
       border-radius: 10px;
@@ -33,10 +34,12 @@
     }
 
     #waiting-message {
+      display: none;
       text-align: center;
       font-size: 18px;
-      color: #555;
-      margin-top: 20px;
+      font-weight: bold;
+      margin: 10px;
+      color: orange;
     }
 
     #game {
@@ -44,7 +47,7 @@
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
       gap: 10px;
       max-width: 800px;
-      margin: 20px auto;
+      margin: auto;
     }
 
     .card {
@@ -110,15 +113,17 @@
   <div id="status-bar">
     <span id="player1-name">Joueur 1 :</span>
     <span>Score : <span id="score1">0</span></span>
-    <span>🕒 Heure de début : <span id="start-time">--:--</span></span>
+    <span>🕓 Heure de début : <span id="start-time">--:--</span></span>
     <span>🎯 Coups : <span id="move-count">0</span></span>
     <span>⏱️ Durée : <span id="timer">0s</span></span>
     <span>Score : <span id="score2">0</span></span>
     <span id="player2-name">Joueur 2 :</span>
-    <button id="reset-button">🔁 Réinitialiser</button>
+    <button id="reset-button">🔄 Réinitialiser</button>
   </div>
 
-  <div id="waiting-message">⏳ En attente de la connexion d’un deuxième joueur...</div>
+  <!-- ✅ Ajouté pour affichage du message d'attente -->
+  <div id="waiting-message">⏳ En attente du deuxième joueur...</div>
+
   <div id="game"></div>
 
   <script type="module" src="memory-core.js"></script>
