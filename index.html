@@ -2,28 +2,28 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Jeu Memory : TAKWEEN</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Jeu Memory : TAKWEEN</h1>
-
   <div id="status-bar">
-    <div id="player1-name">👤 Joueur 1 :</div>
-    <div id="score1">Score : 0</div>
-    <div id="player2-name">👤 Joueur 2 :</div>
-    <div id="score2">Score : 0</div>
-    <div>Coups : <span id="move-count">0</span></div>
-    <div>Temps : <span id="timer">0s</span></div>
-    <div>Début : <span id="start-time">--:--:--</span></div>
-    <button id="reset-button">🔄 Réinitialiser</button>
+    <span id="player1-name">🧑 Joueur 1 :</span>
+    <span id="score1">Score : 0</span>
+    <span id="start-time">🕒 --:--</span>
+    <span id="move-count">🔁 0</span>
+    <span id="timer">⏱️ 0s</span>
+    <span id="score2">Score : 0</span>
+    <span id="player2-name">🧑 Joueur 2 :</span>
+    <button id="reset-button" disabled>🔁 Réinitialiser</button>
   </div>
 
-  <div id="waiting-message">⏳ En attente du deuxième joueur...</div>
+  <div id="waiting-message" style="text-align:center; font-size:20px; margin:20px; color:#888;">
+    ⏳ En attente du deuxième joueur...
+  </div>
 
   <div id="game"></div>
 
+  <script type="module" src="session.js"></script>
   <script type="module" src="memory-core.js"></script>
 </body>
 </html>
