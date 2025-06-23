@@ -2,115 +2,25 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Jeu Memory : TAKWEEN</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f9f9f9;
-      margin: 0;
-      padding: 10px;
-    }
-
-    #status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 15px;
-      padding: 10px;
-      background-color: #fff;
-      border-radius: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      font-size: 16px;
-    }
-
-    #status-bar span {
-      font-weight: bold;
-    }
-
-    .active-player {
-      color: green;
-    }
-
-    #game {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 10px;
-      max-width: 800px;
-      margin: auto;
-    }
-
-    .card {
-      width: 100px;
-      height: 100px;
-      perspective: 1000px;
-      cursor: pointer;
-    }
-
-    .inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transform-style: preserve-3d;
-      transition: transform 0.6s;
-    }
-
-    .flipped .inner {
-      transform: rotateY(180deg);
-    }
-
-    .front, .back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .front {
-      transform: rotateY(180deg);
-    }
-
-    .front img, .back img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .matched {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-
-    #reset-button {
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    #reset-button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <h1>Jeu Memory : TAKWEEN</h1>
 
   <div id="status-bar">
-    <span id="player1-name">Joueur 1 :</span>
-    <span>Score : <span id="score1">0</span></span>
-    <span>🕒 Heure de début : <span id="start-time">--:--</span></span>
-    <span>🎯 Coups : <span id="move-count">0</span></span>
-    <span>⏱ Durée : <span id="timer">0s</span></span>
-    <span>Score : <span id="score2">0</span></span>
-    <span id="player2-name">Joueur 2 :</span>
-    <button id="reset-button">🔁 Réinitialiser</button>
+    <div id="player1-name">?? Joueur 1 :</div>
+    <div id="score1">Score : 0</div>
+    <div id="player2-name">?? Joueur 2 :</div>
+    <div id="score2">Score : 0</div>
+    <div>Coups : <span id="move-count">0</span></div>
+    <div>Temps : <span id="timer">0s</span></div>
+    <div>D�but : <span id="start-time">--:--:--</span></div>
+    <button id="reset-button">?? R�initialiser</button>
   </div>
+
+  <div id="waiting-message">? En attente du deuxi�me joueur...</div>
 
   <div id="game"></div>
 
