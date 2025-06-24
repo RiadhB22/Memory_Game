@@ -1,36 +1,52 @@
+/* style.css */
+
 body {
-  font-family: Arial, sans-serif;
-  background: #f7f9fc;
-  color: #333;
   margin: 0;
-  padding: 0;
-  text-align: center;
-}
-
-#status-bar {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f0f4f8;
   display: flex;
-  justify-content: space-around;
+  flex-direction: column;
   align-items: center;
-  flex-wrap: wrap;
-  padding: 10px;
-  background: #dff0fc;
-  border-bottom: 2px solid #ccc;
-  font-size: 1.1em;
+  padding: 20px;
 }
 
-#game {
+.title {
+  font-size: 2em;
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+#status-bar, #names-display {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  background: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 15px;
+}
+
+#waiting-message {
+  font-style: italic;
+  color: #e67e22;
+  margin-bottom: 15px;
+  display: none;
+}
+
+.board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 10px;
-  padding: 20px;
-  max-width: 800px;
-  margin: auto;
+  grid-template-columns: repeat(8, 100px);
+  grid-gap: 10px;
+  justify-content: center;
 }
 
 .card {
-  width: 80px;
+  width: 100px;
   height: 100px;
-  perspective: 600px;
+  perspective: 1000px;
+  cursor: pointer;
 }
 
 .card .inner {
@@ -41,48 +57,52 @@ body {
   transition: transform 0.6s;
 }
 
-.card .flipped {
+.card.flipped .inner {
   transform: rotateY(180deg);
 }
 
-.card .front, .card .back {
+.front, .back {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
-}
-
-.card .front img,
-.card .back img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   border-radius: 8px;
+  overflow: hidden;
 }
 
-.card .back {
+.front {
   transform: rotateY(180deg);
 }
 
-.active-player {
-  font-weight: bold;
-  color: #2c3e50;
-  background-color: #d1f7d6;
-  padding: 3px 8px;
-  border-radius: 10px;
+.front img, .back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card.matched {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 #reset-button {
-  padding: 8px 15px;
-  font-size: 1em;
-  background: #ff5c5c;
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #c0392b;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
 #reset-button:disabled {
-  background: #ccc;
+  background-color: #ccc;
   cursor: not-allowed;
+}
+
+.active-player::after {
+  content: ' ✋';
+  font-size: 1.2em;
+  color: green;
 }
