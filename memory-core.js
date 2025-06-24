@@ -13,7 +13,7 @@ for (let i = 1; i <= 20; i++) {
   images.push({ id: i, img: `files/${i}-2.jpg` });
 }
 
-const cards = images.sort(() => 0.5 - Math.random());
+const cards = shuffleArray(images).slice(0, 40);
 const sounds = {
   flip1: new Audio("files/flip1.mp3"),
   flip2: new Audio("files/flip2.mp3"),
@@ -88,6 +88,8 @@ function updateNamesUI(data) {
 function renderGame(data) {
   const game = document.getElementById("game");
   game.innerHTML = "";
+  game.style.gridTemplateColumns = "repeat(8, 1fr)";
+
   data.board.forEach((card, index) => {
     const isFlipped = data.flipped?.includes(index);
     const isMatched = data.matched?.includes(card.id);
@@ -179,4 +181,12 @@ function setupResetButton() {
       window.location.reload();
     }
   });
+}
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
 }
