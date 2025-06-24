@@ -1,25 +1,34 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 class="titre">🧠 Jeu Memory : TAKWEEN</h1>
+  <h1 style="text-align:center;">Jeu Memory : TAKWEEN</h1>
 
   <div id="status-bar">
-    <div id="player1-name">Joueur 1 : --</div>
-    <div id="score1">Score : 0</div>
-    <div id="player2-name">Joueur 2 : --</div>
-    <div id="score2">Score : 0</div>
-    <div>⏳ Heure : <span id="start-time">--:--</span></div>
-    <div>🎯 Coups : <span id="move-count">0</span></div>
-    <div>⏱️ Durée : <span id="timer">0s</span></div>
+    <div>
+      <span id="player1-name">Joueur 1 :</span>
+      <span id="score1">Score : 0</span>
+    </div>
+    <div>
+      <span id="player2-name">Joueur 2 :</span>
+      <span id="score2">Score : 0</span>
+    </div>
+    <div>
+      <span>Heure de début : <span id="start-time">--:--</span></span>
+      <span>Durée : <span id="timer">0s</span></span>
+      <span>Coups : <span id="move-count">0</span></span>
+    </div>
     <button id="reset-button">🔁 Réinitialiser</button>
   </div>
 
-  <div id="waiting-message" style="display:none;">⏳ En attente du deuxième joueur...</div>
+  <div id="waiting-message" style="display:none;text-align:center;margin:10px;color:#e67e22;font-weight:bold;">
+    ⏳ En attente du deuxième joueur...
+  </div>
+
   <div id="game"></div>
 
   <script type="module" src="session.js"></script>
