@@ -24,6 +24,8 @@ init();
 
 async function init() {
   await detectPlayerRole();
+  document.getElementById("reset-button").disabled = player !== 'joueur1';
+  document.getElementById("reset-button").style.cursor = player !== 'joueur1' ? 'not-allowed' : 'pointer';
   setupListeners();
   setupResetButton();
   checkStart();
@@ -79,8 +81,8 @@ function setupListeners() {
 function updateNamesUI(data) {
   const nom1 = data.sessions?.nomJoueur1 || "Joueur 1";
   const nom2 = data.sessions?.nomJoueur2 || "Joueur 2";
-  document.getElementById("player1-name").textContent = `👤 ${nom1} :`;
-  document.getElementById("player2-name").textContent = `👤 ${nom2} :`;
+  document.getElementById("player1-name").textContent = `${data.turn === 'joueur1' ? '🖐️ ' : ''}${nom1} :`;
+  document.getElementById("player2-name").textContent = `${data.turn === 'joueur2' ? '🖐️ ' : ''}${nom2} :`;
 }
 
 function renderGame(data) {
@@ -172,7 +174,9 @@ function updateStatus(data) {
 function setupResetButton() {
   document.getElementById("reset-button").addEventListener("click", () => {
     if (player !== 'joueur1') return;
-    remove(gameRef);
-    window.location.reload();
+    if (confirm("Êtes-vous sûr de vouloir recommencer ? Le jeu en cours sera annulé.")) {
+      remove(gameRef);
+      window.location.reload();
+    }
   });
 }
