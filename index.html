@@ -1,37 +1,127 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jeu Memory : TAKWEEN</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 style="text-align:center;">Jeu Memory : TAKWEEN</h1>
-
+  <h1 class="title">Jeu Memory : TAKWEEN</h1>
+  <div id="waiting-message">⏳ En attente du deuxième joueur...</div>
   <div id="status-bar">
-    <div>
-      <span id="player1-name">Joueur 1 :</span>
-      <span id="score1">Score : 0</span>
-    </div>
-    <div>
-      <span id="player2-name">Joueur 2 :</span>
-      <span id="score2">Score : 0</span>
-    </div>
-    <div>
-      <span>Heure de début : <span id="start-time">--:--</span></span>
-      <span>Durée : <span id="timer">0s</span></span>
-      <span>Coups : <span id="move-count">0</span></span>
-    </div>
-    <button id="reset-button">🔁 Réinitialiser</button>
+    <div id="score1" class="score"><span id="player1-name">Joueur 1 :</span> 0</div>
+    <div>🕑 Heure de début : <span id="start-time">- : -</span></div>
+    <div>🌀 Coups : <span id="move-count">0</span></div>
+    <div>⏱️ Durée : <span id="timer">0s</span></div>
+    <div id="score2" class="score"><span id="player2-name">Joueur 2 :</span> 0</div>
+    <button id="reset-button">🔄 Réinitialiser</button>
   </div>
-
-  <div id="waiting-message" style="display:none;text-align:center;margin:10px;color:#e67e22;font-weight:bold;">
-    ⏳ En attente du deuxième joueur...
-  </div>
-
-  <div id="game"></div>
-
+  <div id="game" class="grid"></div>
   <script type="module" src="session.js"></script>
   <script type="module" src="memory-core.js"></script>
 </body>
 </html>
+
+/* style.css */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  background-color: #f5f7fa;
+  text-align: center;
+}
+
+.title {
+  font-size: 2rem;
+  margin: 1rem 0;
+  color: #333;
+}
+
+#waiting-message {
+  background-color: #fff3cd;
+  padding: 10px;
+  margin: 10px auto;
+  width: fit-content;
+  border: 1px solid #ffeeba;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+#status-bar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background-color: #ffffff;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  flex-wrap: wrap;
+}
+
+.score {
+  font-weight: bold;
+}
+
+.active-player {
+  color: green;
+  font-size: 1.1em;
+}
+
+#game.grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  padding: 20px;
+  max-width: 800px;
+  margin: auto;
+}
+
+.card {
+  width: 100%;
+  aspect-ratio: 1/1.2;
+  cursor: pointer;
+  perspective: 1000px;
+}
+
+.card .inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.card .inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.card .front, .card .back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 10px;
+}
+
+.card .back {
+  background-color: #ccc;
+}
+
+.card .front {
+  transform: rotateY(180deg);
+}
+
+button#reset-button {
+  padding: 5px 10px;
+  font-weight: bold;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button#reset-button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
