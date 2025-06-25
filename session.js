@@ -1,4 +1,3 @@
-// session.js
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
 const db = getDatabase();
