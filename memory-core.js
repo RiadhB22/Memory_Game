@@ -4,14 +4,14 @@ import { getDatabase, ref, set, get, onValue, update, remove } from "https://www
 const db = getDatabase();
 const gameRef = ref(db, 'game');
 
-let sessionId = localStorage.getItem("memory_session_id");
-if (!sessionId) {
-  sessionId = crypto.randomUUID();
-  localStorage.setItem("memory_session_id", sessionId);
-}
-sessionStorage.setItem("sessionId", sessionId);
+const sounds = {
+  flip1: new Audio("files/flip1.mp3"),
+  flip2: new Audio("files/flip2.mp3")
+};
 
-let player = sessionStorage.getItem("player");
+let player = null;
+let sessionId = null;
+let playerName = null;
 
 const images = [];
 for (let i = 1; i <= 20; i++) {
@@ -19,57 +19,19 @@ for (let i = 1; i <= 20; i++) {
   images.push({ id: i, img: `files/${i}-2.jpg` });
 }
 
-let cards = images.sort(() => 0.5 - Math.random());
-
-const sounds = {
-  flip1: new Audio("files/flip1.mp3"),
-  flip2: new Audio("files/flip2.mp3"),
-  error: new Audio("files/error.mp3"),
-  success: new Audio("files/success.mp3")
-};
+const cards = images.sort(() => 0.5 - Math.random());
 
 export async function initGame(nom, role) {
-  sessionStorage.setItem("player", role);
-  sessionStorage.setItem(`nom${role === "joueur1" ? "Joueur1" : "Joueur2"}`, nom);
   player = role;
+  playerName = nom;
+  sessionId = localStorage.getItem("memory_session_id");
 
-  updateNameDisplay();
+  document.getElementById(`${player}-name`).textContent = `${nom} :`;
+  document.getElementById("reset-button").disabled = player !== "joueur1";
 
-  document.getElementById("reset-button").disabled = player !== 'joueur1';
   setupListeners();
-  setupResetButton();
+  setupReset();
   checkStart();
-}
-
-function updateNameDisplay() {
-  document.getElementById("player1-name").textContent = (sessionStorage.getItem("nomJoueur1") || "Joueur 1") + " :";
-  document.getElementById("player2-name").textContent = (sessionStorage.getItem("nomJoueur2") || "Joueur 2") + " :";
-}
-
-function checkStart() {
-  onValue(gameRef, snapshot => {
-    const data = snapshot.val();
-    if (!data || !data.started) {
-      const nom1 = sessionStorage.getItem("nomJoueur1");
-      const nom2 = sessionStorage.getItem("nomJoueur2");
-      const session1 = sessionStorage.getItem("sessionId");
-
-      if (player === "joueur1" && nom1 && nom2) {
-        const gameData = {
-          started: true,
-          turn: "joueur1",
-          board: cards,
-          matched: [],
-          flipped: [],
-          moves: 0,
-          sessions: { joueur1: session1, joueur2: null },
-          scores: { joueur1: 0, joueur2: 0 },
-          timeStart: Date.now()
-        };
-        set(gameRef, gameData);
-      }
-    }
-  });
 }
 
 function setupListeners() {
@@ -77,57 +39,76 @@ function setupListeners() {
     const data = snapshot.val();
     if (!data || !data.board) return;
 
-    const sessionId = sessionStorage.getItem("sessionId");
-    if (data.sessions?.joueur1 === sessionId && player !== "joueur1") {
-      alert("Ce navigateur est déjà Joueur 1. Utilisez un autre navigateur pour Joueur 2.");
-      return;
-    }
-    if (data.sessions?.joueur2 === sessionId && player !== "joueur2") {
-      alert("Ce navigateur est déjà Joueur 2. Utilisez un autre navigateur pour Joueur 1.");
-      return;
+    if (!data.sessions?.joueur1 || !data.sessions?.joueur2) {
+      document.getElementById("waiting-message").textContent = "⏳ En attente de l'autre joueur...";
+    } else {
+      document.getElementById("waiting-message").textContent = "";
     }
 
-    renderGame(data);
-    updateStatus(data);
+    renderBoard(data);
+    updateUI(data);
   });
 }
 
-function renderGame(data) {
-  const game = document.getElementById("game-board");
-  game.innerHTML = "";
+function checkStart() {
+  onValue(gameRef, snapshot => {
+    const data = snapshot.val();
+    if (!data?.started && data?.sessions?.joueur1 && data?.sessions?.joueur2) {
+      const newGame = {
+        started: true,
+        turn: "joueur1",
+        board: cards,
+        flipped: [],
+        matched: [],
+        moves: 0,
+        scores: { joueur1: 0, joueur2: 0 },
+        timeStart: Date.now(),
+        sessions: data.sessions,
+        noms: {
+          joueur1: player === "joueur1" ? playerName : data.noms?.joueur1,
+          joueur2: player === "joueur2" ? playerName : data.noms?.joueur2
+        }
+      };
+      set(gameRef, newGame);
+    } else {
+      update(gameRef, {
+        [`noms/${player}`]: playerName
+      });
+    }
+  });
+}
+
+function renderBoard(data) {
+  const board = document.getElementById("game-board");
+  board.innerHTML = "";
   data.board.forEach((card, index) => {
-    const isFlipped = data.flipped?.includes(index);
-    const isMatched = data.matched?.includes(card.id);
-    const cardEl = document.createElement("div");
-    cardEl.className = "card";
-    cardEl.dataset.index = index;
-    cardEl.innerHTML = `
-      <div class="inner ${isFlipped || isMatched ? 'flipped' : ''} ${isMatched ? 'matched' : ''}">
-        <div class="front"><img src="${card.img}" alt=""></div>
-        <div class="back"><img src="files/verso.jpg" alt=""></div>
-      </div>`;
-
-    cardEl.addEventListener("click", () => {
-      if (data.turn !== player) return;
-      handleCardClick(index, card.id);
-    });
-    game.appendChild(cardEl);
+    const flipped = data.flipped.includes(index);
+    const matched = data.matched.includes(card.id);
+    const cardDiv = document.createElement("div");
+    cardDiv.className = "card";
+    cardDiv.innerHTML = `
+      <div class="inner ${flipped || matched ? 'flipped' : ''} ${matched ? 'matched' : ''}">
+        <div class="front"><img src="${card.img}" /></div>
+        <div class="back"><img src="files/verso.jpg" /></div>
+      </div>
+    `;
+    cardDiv.addEventListener("click", () => handleFlip(index, card.id));
+    board.appendChild(cardDiv);
   });
 }
 
-async function handleCardClick(index, id) {
+async function handleFlip(index, id) {
   const snap = await get(gameRef);
   const data = snap.val();
-  if (!data || data.turn !== player || data.flipped?.length >= 2) return;
-  if (data.matched?.includes(id) || data.flipped?.includes(index)) return;
+  if (!data || data.turn !== player || data.flipped.length >= 2) return;
+  if (data.matched.includes(id) || data.flipped.includes(index)) return;
 
-  const newFlipped = data.flipped ? [...data.flipped, index] : [index];
+  const newFlipped = [...data.flipped, index];
   sounds[newFlipped.length === 1 ? 'flip1' : 'flip2'].play();
-
-  update(gameRef, { flipped: newFlipped });
+  await update(gameRef, { flipped: newFlipped });
 
   if (newFlipped.length === 2) {
-    setTimeout(() => checkMatch(newFlipped, data), 800);
+    setTimeout(() => checkMatch(newFlipped, data), 1000);
   }
 }
 
@@ -135,55 +116,60 @@ function checkMatch(flippedIndices, data) {
   const [i1, i2] = flippedIndices;
   const c1 = data.board[i1];
   const c2 = data.board[i2];
-
-  let matched = data.matched || [];
-  let scores = data.scores;
+  let matched = [...data.matched];
+  let scores = { ...data.scores };
   let turn = data.turn;
-  let move = data.moves + 1;
+  let moves = data.moves + 1;
 
-  if (c1.id === c2.id && i1 !== i2) {
+  if (c1.id === c2.id) {
     matched.push(c1.id);
     scores[turn] += 1;
-    sounds.success.play();
   } else {
     turn = turn === "joueur1" ? "joueur2" : "joueur1";
-    sounds.error.play();
   }
 
   update(gameRef, {
     flipped: [],
     matched,
+    scores,
     turn,
-    moves: move,
-    scores
+    moves
   });
 }
 
-function updateStatus(data) {
-  document.getElementById("score1").textContent = data.scores?.joueur1 || 0;
-  document.getElementById("score2").textContent = data.scores?.joueur2 || 0;
-  document.getElementById("move-count").textContent = data.moves || 0;
+function updateUI(data) {
+  document.getElementById("score1").textContent = data.scores.joueur1;
+  document.getElementById("score2").textContent = data.scores.joueur2;
+  document.getElementById("move-count").textContent = data.moves;
 
-  const now = Date.now();
-  const elapsed = Math.floor((now - (data.timeStart || now)) / 1000);
-  document.getElementById("timer").textContent = `${elapsed}s`;
+  const duration = Math.floor((Date.now() - data.timeStart) / 1000);
+  document.getElementById("timer").textContent = `${duration}s`;
   const startTime = new Date(data.timeStart);
   document.getElementById("start-time").textContent = startTime.toLocaleTimeString();
 
-  const p1 = document.getElementById("player1-name");
-  const p2 = document.getElementById("player2-name");
-  p1.classList.remove("active-player");
-  p2.classList.remove("active-player");
-  if (data.turn === "joueur1") p1.classList.add("active-player");
-  if (data.turn === "joueur2") p2.classList.add("active-player");
+  document.getElementById("player1-name").classList.remove("active-player");
+  document.getElementById("player2-name").classList.remove("active-player");
+
+  if (data.turn === "joueur1") {
+    document.getElementById("player1-name").classList.add("active-player");
+  } else {
+    document.getElementById("player2-name").classList.add("active-player");
+  }
+
+  if (data.noms) {
+    if (data.noms.joueur1) {
+      document.getElementById("player1-name").textContent = `${data.noms.joueur1} :`;
+    }
+    if (data.noms.joueur2) {
+      document.getElementById("player2-name").textContent = `${data.noms.joueur2} :`;
+    }
+  }
 }
 
-function setupResetButton() {
+function setupReset() {
   document.getElementById("reset-button").addEventListener("click", () => {
     if (player !== 'joueur1') return;
-    if (confirm("Voulez-vous vraiment recommencer ? Cela réinitialisera le jeu.")) {
-      remove(gameRef);
-      window.location.reload();
-    }
+    remove(gameRef);
+    window.location.reload();
   });
 }
