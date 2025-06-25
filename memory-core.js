@@ -23,6 +23,7 @@ let cards = images.sort(() => 0.5 - Math.random());
 export async function init() {
   player = await detectPlayerRole();
   if (!player) return;
+
   setupListeners();
   setupResetButton();
   checkStart();
@@ -31,7 +32,7 @@ export async function init() {
 function checkStart() {
   onValue(gameRef, snapshot => {
     const data = snapshot.val();
-    if (!data.started && data.noms?.joueur1 && data.noms?.joueur2) {
+    if (!data?.started && data?.noms?.joueur1 && data?.noms?.joueur2) {
       const gameData = {
         started: true,
         turn: "joueur1",
@@ -68,6 +69,7 @@ function setupListeners() {
 
 function renderGame(data) {
   const board = document.getElementById("game-board");
+  if (!board) return;
   board.innerHTML = "";
   data.board.forEach((card, index) => {
     const isFlipped = data.flipped?.includes(index);
@@ -147,6 +149,7 @@ function updateStatus(data) {
 
 function setupResetButton() {
   const btn = document.getElementById("reset-button");
+  if (!btn) return;
   if (player === "joueur1") btn.disabled = false;
   else btn.disabled = true;
 
