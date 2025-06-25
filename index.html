@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>🧠 Jeu Memory : TAKWEEN</h1>
+  <h1>Jeu Memory : TAKWEEN</h1>
 
-  <div id="status-bar">
+  <div class="scoreboard">
     <div id="player1-name">👤 Joueur 1</div>
     <div id="score1">0</div>
     <div id="player2-name">👤 Joueur 2</div>
     <div id="score2">0</div>
-    <div id="move-count">Coups: 0</div>
+    <div id="move-count">Coups : 0</div>
     <div id="timer">0s</div>
-    <div id="start-time">--:--</div>
-    <button id="reset-button">🔄 Nouveau jeu</button>
+    <div id="start-time">Heure début</div>
   </div>
 
-  <div id="game-board"></div>
+  <div id="game-board" class="board"></div>
+
+  <button id="reset-button">🔄 Rejouer</button>
 
   <script type="module" src="memory-core.js"></script>
 </body>
