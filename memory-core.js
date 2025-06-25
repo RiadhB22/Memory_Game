@@ -22,7 +22,7 @@ async function detectPlayerRole() {
     sessionStorage.setItem("player", "joueur1");
     sessionStorage.setItem("nomJoueur1", nom);
     player = "joueur1";
-    updatePlayerNames();
+    await update(gameRef, { sessions: { joueur1: sessionId }, noms: { joueur1: nom } });
     return;
   }
 
@@ -30,7 +30,7 @@ async function detectPlayerRole() {
     sessionStorage.setItem("player", "joueur1");
     sessionStorage.setItem("nomJoueur1", nom);
     player = "joueur1";
-    updatePlayerNames();
+    await update(gameRef, { "sessions/joueur1": sessionId, "noms/joueur1": nom });
     return;
   }
 
@@ -38,16 +38,11 @@ async function detectPlayerRole() {
     sessionStorage.setItem("player", "joueur2");
     sessionStorage.setItem("nomJoueur2", nom);
     player = "joueur2";
-    updatePlayerNames();
+    await update(gameRef, { "sessions/joueur2": sessionId, "noms/joueur2": nom });
     return;
   }
 
   alert("Deux joueurs sont déjà connectés.");
-}
-
-function updatePlayerNames() {
-  document.getElementById("player1-name").textContent = "👤 " + (sessionStorage.getItem("nomJoueur1") || "Joueur 1") + " :";
-  document.getElementById("player2-name").textContent = "👤 " + (sessionStorage.getItem("nomJoueur2") || "Joueur 2") + " :";
 }
 
 const images = [];
@@ -60,9 +55,6 @@ let cards = images.sort(() => 0.5 - Math.random());
 
 export async function init() {
   await detectPlayerRole();
-
-  document.getElementById("reset-button").disabled = player !== 'joueur1';
-
   setupListeners();
   setupResetButton();
   checkStart();
@@ -72,11 +64,8 @@ function checkStart() {
   onValue(gameRef, snapshot => {
     const data = snapshot.val();
     if (!data || !data.started) {
-      const nom1 = sessionStorage.getItem("nomJoueur1");
-      const nom2 = sessionStorage.getItem("nomJoueur2");
       const session1 = sessionStorage.getItem("sessionId");
-
-      if (player === "joueur1" && nom1 && nom2) {
+      if (player === "joueur1") {
         const gameData = {
           started: true,
           turn: "joueur1",
@@ -84,8 +73,9 @@ function checkStart() {
           matched: [],
           flipped: [],
           moves: 0,
-          sessions: { joueur1: session1, joueur2: null },
+          sessions: { joueur1: session1 },
           scores: { joueur1: 0, joueur2: 0 },
+          noms: { joueur1: sessionStorage.getItem("nomJoueur1") },
           timeStart: Date.now()
         };
         set(gameRef, gameData);
@@ -100,14 +90,11 @@ function setupListeners() {
     if (!data || !data.board) return;
 
     const sessionId = sessionStorage.getItem("sessionId");
-    if (data.sessions?.joueur1 === sessionId && player !== "joueur1") {
-      alert("Ce navigateur est déjà inscrit comme Joueur 1.");
-      return;
-    }
-    if (data.sessions?.joueur2 === sessionId && player !== "joueur2") {
-      alert("Ce navigateur est déjà inscrit comme Joueur 2.");
-      return;
-    }
+    if (data.sessions?.joueur1 === sessionId) player = "joueur1";
+    if (data.sessions?.joueur2 === sessionId) player = "joueur2";
+
+    document.getElementById("player1-name").textContent = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
+    document.getElementById("player2-name").textContent = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
 
     renderGame(data);
     updateStatus(data);
@@ -150,7 +137,7 @@ async function handleCardClick(index, id) {
   update(gameRef, { flipped: newFlipped });
 
   if (newFlipped.length === 2) {
-    setTimeout(() => checkMatch(newFlipped, data), 1000);
+    setTimeout(() => checkMatch(newFlipped, data), 800);
   }
 }
 
@@ -191,6 +178,11 @@ function updateStatus(data) {
 
   const startTime = new Date(data.timeStart);
   document.getElementById("start-time").textContent = startTime.toLocaleTimeString();
+
+  document.getElementById("player1-name").classList.remove("active-player");
+  document.getElementById("player2-name").classList.remove("active-player");
+  if (data.turn === "joueur1") document.getElementById("player1-name").classList.add("active-player");
+  if (data.turn === "joueur2") document.getElementById("player2-name").classList.add("active-player");
 }
 
 function setupResetButton() {
