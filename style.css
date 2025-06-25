@@ -1,50 +1,54 @@
 body {
   font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
+  background-color: #f9f9f9;
+  text-align: center;
   margin: 0;
   padding: 0;
-  text-align: center;
 }
 
 h1 {
-  margin: 1rem 0;
-  font-size: 2rem;
-  color: #333;
+  margin: 10px;
+  font-size: 24px;
+  background-color: #e0e0e0;
+  padding: 10px;
 }
 
-.status-bar {
+.header {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
 }
 
-#player1-name.active-player,
-#player2-name.active-player {
-  color: #d9534f;
+.player {
   font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 10px;
 }
 
-#player1-name.active-player::after,
-#player2-name.active-player::after {
-  content: " ✋";
+.active-player {
+  background-color: #d1ffd1;
+  border: 2px solid #4CAF50;
 }
 
-button {
-  padding: 6px 12px;
-  font-size: 1rem;
+.score, .move, #timer, #start-time {
+  font-size: 14px;
+  margin: 0 5px;
+}
+
+#reset-button {
+  padding: 5px 10px;
   cursor: pointer;
 }
 
-.grid {
+.game-grid {
   display: grid;
   grid-template-columns: repeat(8, 80px);
-  grid-template-rows: repeat(5, 80px);
-  gap: 10px;
+  grid-gap: 10px;
   justify-content: center;
-  margin: 1rem;
+  margin: 20px auto;
 }
 
 .card {
@@ -61,7 +65,7 @@ button {
   position: relative;
 }
 
-.inner.flipped {
+.flipped {
   transform: rotateY(180deg);
 }
 
@@ -72,11 +76,10 @@ button {
   backface-visibility: hidden;
 }
 
-.front img, .back img {
-  width: 100%;
-  height: 100%;
+.front {
+  transform: rotateY(180deg);
 }
 
 .back {
-  transform: rotateY(180deg);
+  background-color: #ccc;
 }
