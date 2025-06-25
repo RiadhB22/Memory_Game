@@ -24,9 +24,17 @@ export async function init() {
   player = await detectPlayerRole();
   if (!player) return;
 
+  updatePlayerNameDisplay();
   setupListeners();
   setupResetButton();
   checkStart();
+}
+
+function updatePlayerNameDisplay() {
+  const nom1 = sessionStorage.getItem("nomJoueur1") || "Joueur 1";
+  const nom2 = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
+  document.getElementById("player1-name").innerHTML = `👤 ${nom1}`;
+  document.getElementById("player2-name").innerHTML = `👤 ${nom2}`;
 }
 
 function checkStart() {
