@@ -1,53 +1,17 @@
 // memory-core.js
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { detectPlayerRole } from "./session.js";
 
 const db = getDatabase();
 const gameRef = ref(db, 'game');
 
+let player = null;
 let sessionId = localStorage.getItem("memory_session_id");
 if (!sessionId) {
   sessionId = crypto.randomUUID();
   localStorage.setItem("memory_session_id", sessionId);
 }
 sessionStorage.setItem("sessionId", sessionId);
-let player = sessionStorage.getItem("player");
-
-async function detectPlayerRole() {
-  const snap = await get(gameRef);
-  const data = snap.val();
-  const nom = prompt("Entrez votre nom :");
-  if (!nom) return;
-
-  if (!data) {
-    sessionStorage.setItem("player", "joueur1");
-    sessionStorage.setItem("nomJoueur1", nom);
-    player = "joueur1";
-    await set(gameRef, {
-      sessions: { joueur1: sessionId },
-      noms: { joueur1: nom },
-      started: false
-    });
-    return;
-  }
-
-  if (!data.sessions?.joueur1) {
-    sessionStorage.setItem("player", "joueur1");
-    sessionStorage.setItem("nomJoueur1", nom);
-    player = "joueur1";
-    await update(gameRef, { "sessions/joueur1": sessionId, "noms/joueur1": nom });
-    return;
-  }
-
-  if (!data.sessions?.joueur2) {
-    sessionStorage.setItem("player", "joueur2");
-    sessionStorage.setItem("nomJoueur2", nom);
-    player = "joueur2";
-    await update(gameRef, { "sessions/joueur2": sessionId, "noms/joueur2": nom });
-    return;
-  }
-
-  alert("Deux joueurs sont déjà connectés.");
-}
 
 const images = [];
 for (let i = 1; i <= 20; i++) {
@@ -57,7 +21,8 @@ for (let i = 1; i <= 20; i++) {
 let cards = images.sort(() => 0.5 - Math.random());
 
 export async function init() {
-  await detectPlayerRole();
+  player = await detectPlayerRole();
+  if (!player) return;
   setupListeners();
   setupResetButton();
   checkStart();
@@ -93,8 +58,8 @@ function setupListeners() {
     if (data.sessions?.joueur1 === sessionId) player = "joueur1";
     if (data.sessions?.joueur2 === sessionId) player = "joueur2";
 
-    document.getElementById("player1-name").innerHTML = `✋ ${data.noms?.joueur1 || "Joueur 1"}`;
-    document.getElementById("player2-name").innerHTML = `✋ ${data.noms?.joueur2 || "Joueur 2"}`;
+    document.getElementById("player1-name").innerHTML = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
+    document.getElementById("player2-name").innerHTML = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
 
     renderGame(data);
     updateStatus(data);
@@ -133,7 +98,7 @@ async function handleCardClick(index, id) {
   update(gameRef, { flipped: newFlipped });
 
   if (newFlipped.length === 2) {
-    setTimeout(() => checkMatch(newFlipped, data), 900);
+    setTimeout(() => checkMatch(newFlipped, data), 800);
   }
 }
 
