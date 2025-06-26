@@ -6,12 +6,7 @@ const db = getDatabase();
 const gameRef = ref(db, 'game');
 
 let player = null;
-let sessionId = localStorage.getItem("memory_session_id");
-if (!sessionId) {
-  sessionId = crypto.randomUUID();
-  localStorage.setItem("memory_session_id", sessionId);
-}
-sessionStorage.setItem("sessionId", sessionId);
+let sessionId = sessionStorage.getItem("sessionId");
 
 const images = [];
 for (let i = 1; i <= 20; i++) {
@@ -24,7 +19,7 @@ export async function init() {
   player = await detectPlayerRole();
   if (!player) return;
 
-  updatePlayerNameDisplay(); // Affiche les noms immédiatement
+  updatePlayerNameDisplay();
   setupListeners();
   setupResetButton();
   checkStart();
@@ -63,7 +58,6 @@ function setupListeners() {
     const data = snapshot.val();
     if (!data || !data.board) return;
 
-    const sessionId = sessionStorage.getItem("sessionId");
     if (data.sessions?.joueur1 === sessionId) player = "joueur1";
     if (data.sessions?.joueur2 === sessionId) player = "joueur2";
 
@@ -151,20 +145,15 @@ function updateStatus(data) {
   const p2 = document.getElementById("player2-name");
   p1.classList.remove("active-player");
   p2.classList.remove("active-player");
-
-  if (data.turn === "joueur1") {
-    p1.classList.add("active-player");
-    p1.innerHTML += " ✋";
-  } else {
-    p2.classList.add("active-player");
-    p2.innerHTML += " ✋";
-  }
+  if (data.turn === "joueur1") p1.classList.add("active-player");
+  if (data.turn === "joueur2") p2.classList.add("active-player");
 }
 
 function setupResetButton() {
   const btn = document.getElementById("reset-button");
   if (!btn) return;
-  btn.disabled = player !== "joueur1";
+  if (player === "joueur1") btn.disabled = false;
+  else btn.disabled = true;
 
   btn.addEventListener("click", () => {
     if (player === "joueur1") {
