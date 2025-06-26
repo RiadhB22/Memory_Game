@@ -1,4 +1,3 @@
-// memory-core.js
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { detectPlayerRole } from "./session.js";
 
@@ -60,9 +59,6 @@ function setupListeners() {
 
     if (data.sessions?.joueur1 === sessionId) player = "joueur1";
     if (data.sessions?.joueur2 === sessionId) player = "joueur2";
-
-    document.getElementById("player1-name").innerHTML = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
-    document.getElementById("player2-name").innerHTML = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
 
     renderGame(data);
     updateStatus(data);
@@ -135,10 +131,7 @@ function updateStatus(data) {
   document.getElementById("score1").textContent = data.scores?.joueur1 || 0;
   document.getElementById("score2").textContent = data.scores?.joueur2 || 0;
   document.getElementById("move-count").textContent = data.moves || 0;
-
-  const now = Date.now();
-  const elapsed = Math.floor((now - (data.timeStart || now)) / 1000);
-  document.getElementById("timer").textContent = `${elapsed}s`;
+  document.getElementById("timer").textContent = `${Math.floor((Date.now() - data.timeStart) / 1000)}s`;
   document.getElementById("start-time").textContent = new Date(data.timeStart).toLocaleTimeString();
 
   const p1 = document.getElementById("player1-name");
