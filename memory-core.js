@@ -1,4 +1,3 @@
-// memory-core.js
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { detectPlayerRole } from "./session.js";
 
@@ -35,6 +34,14 @@ function updatePlayerNameDisplay() {
   const nom2 = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
   document.getElementById("player1-name").innerHTML = `👤 ${nom1}`;
   document.getElementById("player2-name").innerHTML = `👤 ${nom2}`;
+  
+  // Afficher un message si on est joueur1 et joueur2 pas encore connecté
+  const waiting = document.getElementById("waiting-message");
+  if (player === "joueur1" && !sessionStorage.getItem("nomJoueur2")) {
+    waiting.textContent = "⏳ En attente du deuxième joueur...";
+  } else {
+    waiting.textContent = "";
+  }
 }
 
 function checkStart() {
@@ -158,8 +165,7 @@ function updateStatus(data) {
 function setupResetButton() {
   const btn = document.getElementById("reset-button");
   if (!btn) return;
-  if (player === "joueur1") btn.disabled = false;
-  else btn.disabled = true;
+  btn.disabled = player !== "joueur1";
 
   btn.addEventListener("click", () => {
     if (player === "joueur1") {
