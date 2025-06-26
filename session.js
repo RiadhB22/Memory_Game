@@ -12,6 +12,10 @@ export async function detectPlayerRole() {
   let snap = await get(gameRef);
   const data = snap.val() || {};
 
+  // Nettoyer l'ancien joueur s'il existe avec cette session
+  if (data.sessions?.joueur1 === sessionId) return "joueur1";
+  if (data.sessions?.joueur2 === sessionId) return "joueur2";
+
   const nom = prompt("Entrez votre nom :");
   if (!nom) return null;
 
