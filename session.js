@@ -1,4 +1,3 @@
-// session.js
 import { getDatabase, ref, onValue, set, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
 const db = getDatabase();
@@ -41,6 +40,6 @@ export async function detectPlayerRole() {
     return "joueur2";
   }
 
-  alert("Deux joueurs sont déjà connectés.");
+  alert("❌ Deux joueurs sont déjà connectés.");
   return null;
 }
