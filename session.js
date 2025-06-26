@@ -1,33 +1,39 @@
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
 const db = getDatabase();
 const gameRef = ref(db, "game");
 
 export async function detectPlayerRole() {
-  const snapshot = await get(gameRef);
-  const data = snapshot.val() || {};
-  const sessionId = sessionStorage.getItem("sessionId");
-  let role = null;
+  let snapshot = await (await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js")).get(gameRef);
+  let data = snapshot.val() || {};
+  let sessionId = sessionStorage.getItem("sessionId");
 
-  const nom = prompt(`Entrez votre nom (${data.noms?.joueur1 ? "Joueur 2" : "Joueur 1"}) :`);
-
-  if (!data.sessions?.joueur1) {
-    role = "joueur1";
-  } else if (!data.sessions?.joueur2) {
-    role = "joueur2";
-  } else {
-    alert("❌ Deux joueurs sont déjà connectés.");
-    return null;
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    sessionStorage.setItem("sessionId", sessionId);
   }
 
-  const sessions = data.sessions || {};
-  const noms = data.noms || {};
-  sessions[role] = sessionId;
-  noms[role] = nom;
+  let noms = data.noms || {};
+  let sessions = data.sessions || {};
 
-  sessionStorage.setItem("player", role);
-  sessionStorage.setItem(`nom${role.charAt(0).toUpperCase() + role.slice(1)}`, nom);
+  if (!sessions.joueur1) {
+    const nom = prompt("Entrez le nom du 1er joueur :");
+    sessions.joueur1 = sessionId;
+    noms.joueur1 = nom || "Joueur 1";
+    sessionStorage.setItem("nomJoueur1", noms.joueur1);
+    await update(gameRef, { sessions, noms });
+    return "joueur1";
+  }
 
-  await update(gameRef, { sessions, noms });
-  return role;
+  if (!sessions.joueur2) {
+    const nom = prompt("Entrez le nom du 2ème joueur :");
+    sessions.joueur2 = sessionId;
+    noms.joueur2 = nom || "Joueur 2";
+    sessionStorage.setItem("nomJoueur2", noms.joueur2);
+    await update(gameRef, { sessions, noms });
+    return "joueur2";
+  }
+
+  alert("Deux joueurs sont déjà connectés.");
+  return null;
 }
