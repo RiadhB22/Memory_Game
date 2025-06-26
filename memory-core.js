@@ -1,3 +1,4 @@
+// memory-core.js
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { detectPlayerRole } from "./session.js";
 
@@ -145,8 +146,7 @@ function updateStatus(data) {
 function setupResetButton() {
   const btn = document.getElementById("reset-button");
   if (!btn) return;
-  if (player === "joueur1") btn.disabled = false;
-  else btn.disabled = true;
+  btn.disabled = player !== "joueur1";
 
   btn.addEventListener("click", () => {
     if (player === "joueur1") {
