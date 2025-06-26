@@ -6,11 +6,12 @@ const db = getDatabase();
 const gameRef = ref(db, 'game');
 
 let player = null;
-let sessionId = sessionStorage.getItem("sessionId");
+let sessionId = localStorage.getItem("memory_session_id");
 if (!sessionId) {
   sessionId = crypto.randomUUID();
-  sessionStorage.setItem("sessionId", sessionId);
+  localStorage.setItem("memory_session_id", sessionId);
 }
+sessionStorage.setItem("sessionId", sessionId);
 
 const images = [];
 for (let i = 1; i <= 20; i++) {
@@ -23,9 +24,17 @@ export async function init() {
   player = await detectPlayerRole();
   if (!player) return;
 
+  updatePlayerNameDisplay();
   setupListeners();
   setupResetButton();
   checkStart();
+}
+
+function updatePlayerNameDisplay() {
+  const nom1 = sessionStorage.getItem("nomJoueur1") || "Joueur 1";
+  const nom2 = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
+  document.getElementById("player1-name").innerHTML = `👤 ${nom1}`;
+  document.getElementById("player2-name").innerHTML = `👤 ${nom2}`;
 }
 
 function checkStart() {
@@ -54,11 +63,12 @@ function setupListeners() {
     const data = snapshot.val();
     if (!data || !data.board) return;
 
+    const sessionId = sessionStorage.getItem("sessionId");
     if (data.sessions?.joueur1 === sessionId) player = "joueur1";
     if (data.sessions?.joueur2 === sessionId) player = "joueur2";
 
-    document.getElementById("player1-name").textContent = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
-    document.getElementById("player2-name").textContent = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
+    document.getElementById("player1-name").innerHTML = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
+    document.getElementById("player2-name").innerHTML = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
 
     renderGame(data);
     updateStatus(data);
@@ -77,8 +87,8 @@ function renderGame(data) {
     cardEl.dataset.index = index;
     cardEl.innerHTML = `
       <div class="inner ${isFlipped || isMatched ? 'flipped' : ''} ${isMatched ? 'matched' : ''}">
-        <div class="front"><img src="${card.img}" alt="carte"></div>
-        <div class="back"><img src="files/verso.jpg" alt="verso"></div>
+        <div class="front"><img src="${card.img}" alt=""></div>
+        <div class="back"><img src="files/verso.jpg" alt=""></div>
       </div>`;
     cardEl.addEventListener("click", () => {
       if (data.turn !== player) return;
@@ -94,11 +104,11 @@ async function handleCardClick(index, id) {
   if (!data || data.turn !== player || data.flipped?.length >= 2) return;
   if (data.matched?.includes(id) || data.flipped?.includes(index)) return;
 
-  const newFlipped = [...(data.flipped || []), index];
+  const newFlipped = data.flipped ? [...data.flipped, index] : [index];
   update(gameRef, { flipped: newFlipped });
 
   if (newFlipped.length === 2) {
-    setTimeout(() => checkMatch(newFlipped, data), 1000);
+    setTimeout(() => checkMatch(newFlipped, data), 800);
   }
 }
 
@@ -106,8 +116,8 @@ function checkMatch(flippedIndices, data) {
   const [i1, i2] = flippedIndices;
   const c1 = data.board[i1];
   const c2 = data.board[i2];
-  let matched = [...(data.matched || [])];
-  let scores = { ...data.scores };
+  let matched = data.matched || [];
+  let scores = data.scores;
   let turn = data.turn;
   let move = (data.moves || 0) + 1;
 
@@ -131,7 +141,10 @@ function updateStatus(data) {
   document.getElementById("score1").textContent = data.scores?.joueur1 || 0;
   document.getElementById("score2").textContent = data.scores?.joueur2 || 0;
   document.getElementById("move-count").textContent = data.moves || 0;
-  document.getElementById("timer").textContent = `${Math.floor((Date.now() - data.timeStart) / 1000)}s`;
+
+  const now = Date.now();
+  const elapsed = Math.floor((now - (data.timeStart || now)) / 1000);
+  document.getElementById("timer").textContent = `${elapsed}s`;
   document.getElementById("start-time").textContent = new Date(data.timeStart).toLocaleTimeString();
 
   const p1 = document.getElementById("player1-name");
@@ -145,7 +158,8 @@ function updateStatus(data) {
 function setupResetButton() {
   const btn = document.getElementById("reset-button");
   if (!btn) return;
-  btn.disabled = player !== "joueur1";
+  if (player === "joueur1") btn.disabled = false;
+  else btn.disabled = true;
 
   btn.addEventListener("click", () => {
     if (player === "joueur1") {
