@@ -7,6 +7,10 @@ const gameRef = ref(db, 'game');
 
 let player = null;
 let sessionId = sessionStorage.getItem("sessionId");
+if (!sessionId) {
+  sessionId = crypto.randomUUID();
+  sessionStorage.setItem("sessionId", sessionId);
+}
 
 const images = [];
 for (let i = 1; i <= 20; i++) {
@@ -19,17 +23,9 @@ export async function init() {
   player = await detectPlayerRole();
   if (!player) return;
 
-  updatePlayerNameDisplay();
   setupListeners();
   setupResetButton();
   checkStart();
-}
-
-function updatePlayerNameDisplay() {
-  const nom1 = sessionStorage.getItem("nomJoueur1") || "Joueur 1";
-  const nom2 = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
-  document.getElementById("player1-name").innerHTML = `👤 ${nom1}`;
-  document.getElementById("player2-name").innerHTML = `👤 ${nom2}`;
 }
 
 function checkStart() {
@@ -61,8 +57,9 @@ function setupListeners() {
     if (data.sessions?.joueur1 === sessionId) player = "joueur1";
     if (data.sessions?.joueur2 === sessionId) player = "joueur2";
 
-    document.getElementById("player1-name").innerHTML = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
-    document.getElementById("player2-name").innerHTML = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
+    // Affichage noms synchronisés
+    document.getElementById("player1-name").textContent = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
+    document.getElementById("player2-name").textContent = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
 
     renderGame(data);
     updateStatus(data);
@@ -81,8 +78,8 @@ function renderGame(data) {
     cardEl.dataset.index = index;
     cardEl.innerHTML = `
       <div class="inner ${isFlipped || isMatched ? 'flipped' : ''} ${isMatched ? 'matched' : ''}">
-        <div class="front"><img src="${card.img}" alt=""></div>
-        <div class="back"><img src="files/verso.jpg" alt=""></div>
+        <div class="front"><img src="${card.img}" alt="carte"></div>
+        <div class="back"><img src="files/verso.jpg" alt="verso"></div>
       </div>`;
     cardEl.addEventListener("click", () => {
       if (data.turn !== player) return;
@@ -98,11 +95,11 @@ async function handleCardClick(index, id) {
   if (!data || data.turn !== player || data.flipped?.length >= 2) return;
   if (data.matched?.includes(id) || data.flipped?.includes(index)) return;
 
-  const newFlipped = data.flipped ? [...data.flipped, index] : [index];
+  const newFlipped = [...(data.flipped || []), index];
   update(gameRef, { flipped: newFlipped });
 
   if (newFlipped.length === 2) {
-    setTimeout(() => checkMatch(newFlipped, data), 800);
+    setTimeout(() => checkMatch(newFlipped, data), 1000);
   }
 }
 
@@ -110,8 +107,8 @@ function checkMatch(flippedIndices, data) {
   const [i1, i2] = flippedIndices;
   const c1 = data.board[i1];
   const c2 = data.board[i2];
-  let matched = data.matched || [];
-  let scores = data.scores;
+  let matched = [...(data.matched || [])];
+  let scores = { ...data.scores };
   let turn = data.turn;
   let move = (data.moves || 0) + 1;
 
