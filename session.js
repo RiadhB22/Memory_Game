@@ -1,36 +1,33 @@
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
 const db = getDatabase();
-const gameRef = ref(db, 'game');
+const gameRef = ref(db, "game");
 
 export async function detectPlayerRole() {
-  const sessionId = localStorage.getItem("memory_session_id") || crypto.randomUUID();
-  localStorage.setItem("memory_session_id", sessionId);
-  sessionStorage.setItem("sessionId", sessionId);
-
-  const snap = await get(gameRef);
-  const data = snap.val();
+  const snapshot = await get(gameRef);
+  const data = snapshot.val() || {};
+  const sessionId = sessionStorage.getItem("sessionId");
   let role = null;
 
-  if (!data?.sessions?.joueur1) {
-    const nom = prompt("Entrez votre nom (Joueur 1) :");
-    await update(gameRef, {
-      sessions: { ...(data?.sessions || {}), joueur1: sessionId },
-      noms: { ...(data?.noms || {}), joueur1: nom }
-    });
-    sessionStorage.setItem("nomJoueur1", nom);
+  const nom = prompt(`Entrez votre nom (${data.noms?.joueur1 ? "Joueur 2" : "Joueur 1"}) :`);
+
+  if (!data.sessions?.joueur1) {
     role = "joueur1";
-  } else if (!data?.sessions?.joueur2) {
-    const nom = prompt("Entrez votre nom (Joueur 2) :");
-    await update(gameRef, {
-      sessions: { ...(data?.sessions || {}), joueur2: sessionId },
-      noms: { ...(data?.noms || {}), joueur2: nom }
-    });
-    sessionStorage.setItem("nomJoueur2", nom);
+  } else if (!data.sessions?.joueur2) {
     role = "joueur2";
   } else {
-    alert("Deux joueurs sont déjà connectés. Veuillez réessayer plus tard.");
+    alert("❌ Deux joueurs sont déjà connectés.");
+    return null;
   }
 
+  const sessions = data.sessions || {};
+  const noms = data.noms || {};
+  sessions[role] = sessionId;
+  noms[role] = nom;
+
+  sessionStorage.setItem("player", role);
+  sessionStorage.setItem(`nom${role.charAt(0).toUpperCase() + role.slice(1)}`, nom);
+
+  await update(gameRef, { sessions, noms });
   return role;
 }
