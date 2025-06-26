@@ -1,3 +1,4 @@
+// memory-core.js
 import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { detectPlayerRole } from "./session.js";
 
@@ -23,7 +24,7 @@ export async function init() {
   player = await detectPlayerRole();
   if (!player) return;
 
-  updatePlayerNameDisplay();
+  updatePlayerNameDisplay(); // Affiche les noms immédiatement
   setupListeners();
   setupResetButton();
   checkStart();
@@ -34,14 +35,6 @@ function updatePlayerNameDisplay() {
   const nom2 = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
   document.getElementById("player1-name").innerHTML = `👤 ${nom1}`;
   document.getElementById("player2-name").innerHTML = `👤 ${nom2}`;
-  
-  // Afficher un message si on est joueur1 et joueur2 pas encore connecté
-  const waiting = document.getElementById("waiting-message");
-  if (player === "joueur1" && !sessionStorage.getItem("nomJoueur2")) {
-    waiting.textContent = "⏳ En attente du deuxième joueur...";
-  } else {
-    waiting.textContent = "";
-  }
 }
 
 function checkStart() {
@@ -158,8 +151,14 @@ function updateStatus(data) {
   const p2 = document.getElementById("player2-name");
   p1.classList.remove("active-player");
   p2.classList.remove("active-player");
-  if (data.turn === "joueur1") p1.classList.add("active-player");
-  if (data.turn === "joueur2") p2.classList.add("active-player");
+
+  if (data.turn === "joueur1") {
+    p1.classList.add("active-player");
+    p1.innerHTML += " ✋";
+  } else {
+    p2.classList.add("active-player");
+    p2.innerHTML += " ✋";
+  }
 }
 
 function setupResetButton() {
