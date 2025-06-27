@@ -1,101 +1,94 @@
 body {
-  font-family: 'Segoe UI', sans-serif;
-  text-align: center;
-  background: #f0f4f8;
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
   margin: 0;
-  padding: 1em;
+  padding: 20px;
+  text-align: center;
 }
 
-h1 {
-  color: #1f2b5a;
-  font-size: 2em;
-  margin-bottom: 1em;
-}
-
-#header {
+header {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1em;
+  justify-content: space-between;
   align-items: center;
-  background: #dde5ec;
-  padding: 1em;
-  border-radius: 1em;
-  margin-bottom: 1em;
-}
-
-#header div {
-  background: white;
-  padding: 0.5em 1em;
-  border-radius: 1em;
-  box-shadow: 0 0 5px rgba(0,0,0,0.1);
-  font-weight: bold;
-}
-
-#header .active {
-  background: #c0f0d0;
-  border: 2px solid green;
-}
-
-button {
-  padding: 0.5em 1em;
-  border-radius: 0.5em;
-  font-weight: bold;
-  cursor: pointer;
-  border: none;
-  background: #5a6dff;
+  background-color: #004d99;
   color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
 }
 
-button:disabled {
-  background: #999;
-  cursor: not-allowed;
+.player {
+  font-weight: bold;
+  font-size: 1.2em;
 }
 
-.game-grid {
+.active {
+  background-color: yellow;
+  color: black;
+  border-radius: 10px;
+  padding: 5px 10px;
+}
+
+#game {
   display: grid;
-  grid-template-columns: repeat(8, 80px);
+  grid-template-columns: repeat(8, 1fr);
   gap: 10px;
   justify-content: center;
 }
 
 .card {
   width: 80px;
-  height: 80px;
+  height: 100px;
   perspective: 1000px;
+  cursor: pointer;
 }
 
 .card .inner {
   width: 100%;
   height: 100%;
   position: relative;
+  transition: transform 0.6s;
   transform-style: preserve-3d;
-  transition: transform 0.5s;
 }
 
-.card .inner.flipped {
+.card .flipped {
   transform: rotateY(180deg);
 }
 
-.card .front, .card .back {
+.card .front,
+.card .back {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
   border-radius: 10px;
-  overflow: hidden;
 }
 
-.card .back {
-  background: #333;
-}
-
-.card .front {
-  transform: rotateY(180deg);
-}
-
-.card img {
+.card .front img,
+.card .back img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 10px;
+}
+
+.card .back {
+  background-color: #ccc;
+  transform: rotateY(180deg);
+}
+
+#reset-button {
+  padding: 10px 20px;
+  background-color: red;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+#reset-button:disabled {
+  background-color: #888;
+  cursor: not-allowed;
 }
