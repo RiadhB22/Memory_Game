@@ -57,6 +57,15 @@ async function detectPlayerRole() {
   }
   sessionStorage.setItem("player", player);
   sessionStorage.setItem("nomJoueur", nom);
+  updatePlayerNamesImmediately(nom, player);
+}
+
+function updatePlayerNamesImmediately(nom, joueur) {
+  if (joueur === "joueur1") {
+    document.getElementById("player1-name").textContent = nom;
+  } else if (joueur === "joueur2") {
+    document.getElementById("player2-name").textContent = nom;
+  }
 }
 
 function listenToGameState() {
@@ -79,6 +88,7 @@ function listenToGameState() {
 function setupResetButton() {
   document.getElementById("reset-button").addEventListener("click", () => {
     if (sessionStorage.getItem("player") !== "joueur1") return;
+    if (!confirm("Voulez-vous vraiment réinitialiser la partie ?")) return;
     remove(gameRef);
     window.location.reload();
   });
