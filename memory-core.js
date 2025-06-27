@@ -1,110 +1,46 @@
 // memory-core.js
-import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-import { detectPlayerRole } from "./session.js";
+import { getDatabase, ref, get, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
 const db = getDatabase();
 const gameRef = ref(db, 'game');
+const sessionId = sessionStorage.getItem("sessionId");
+const player = sessionStorage.getItem("player");
 
-let player = null;
-let sessionId = localStorage.getItem("memory_session_id");
-if (!sessionId) {
-  sessionId = crypto.randomUUID();
-  localStorage.setItem("memory_session_id", sessionId);
-}
-sessionStorage.setItem("sessionId", sessionId);
-
-const images = [];
-for (let i = 1; i <= 20; i++) {
-  images.push({ id: i, img: `files/${i}-1.jpg` });
-  images.push({ id: i, img: `files/${i}-2.jpg` });
-}
-let cards = images.sort(() => 0.5 - Math.random());
-
-export async function init() {
-  player = await detectPlayerRole();
-  if (!player) return;
-
-  updatePlayerNameDisplay();
-  setupListeners();
-  setupResetButton();
-  checkStart();
-}
-
-function updatePlayerNameDisplay() {
-  const nom1 = sessionStorage.getItem("nomJoueur1") || "Joueur 1";
-  const nom2 = sessionStorage.getItem("nomJoueur2") || "Joueur 2";
-  document.getElementById("player1-name").innerHTML = `👤 ${nom1}`;
-  document.getElementById("player2-name").innerHTML = `👤 ${nom2}`;
-}
-
-function checkStart() {
-  onValue(gameRef, snapshot => {
-    const data = snapshot.val();
-    if (!data?.started && data?.noms?.joueur1 && data?.noms?.joueur2) {
-      const gameData = {
-        started: true,
-        turn: "joueur1",
-        board: cards,
-        matched: [],
-        flipped: [],
-        moves: 0,
-        scores: { joueur1: 0, joueur2: 0 },
-        sessions: data.sessions,
-        noms: data.noms,
-        timeStart: Date.now()
-      };
-      set(gameRef, gameData);
-    }
-  });
-}
-
-function setupListeners() {
-  onValue(gameRef, snapshot => {
-    const data = snapshot.val();
-    if (!data || !data.board) return;
-
-    const sessionId = sessionStorage.getItem("sessionId");
-    if (data.sessions?.joueur1 === sessionId) player = "joueur1";
-    if (data.sessions?.joueur2 === sessionId) player = "joueur2";
-
-    document.getElementById("player1-name").innerHTML = `👤 ${data.noms?.joueur1 || "Joueur 1"}`;
-    document.getElementById("player2-name").innerHTML = `👤 ${data.noms?.joueur2 || "Joueur 2"}`;
-
-    renderGame(data);
-    updateStatus(data);
-  });
-}
+const flip1 = new Audio("files/flip1.mp3");
+const flip2 = new Audio("files/flip2.mp3");
 
 function renderGame(data) {
-  const board = document.getElementById("game-board");
-  if (!board) return;
-  board.innerHTML = "";
+  const game = document.getElementById("game");
+  if (!game) return;
+  game.innerHTML = "";
   data.board.forEach((card, index) => {
     const isFlipped = data.flipped?.includes(index);
     const isMatched = data.matched?.includes(card.id);
-    const cardEl = document.createElement("div");
-    cardEl.className = "card";
-    cardEl.dataset.index = index;
-    cardEl.innerHTML = `
-      <div class="inner ${isFlipped || isMatched ? 'flipped' : ''} ${isMatched ? 'matched' : ''}">
+    const div = document.createElement("div");
+    div.className = `card ${isFlipped || isMatched ? 'flipped' : ''} ${isMatched ? 'matched' : ''}`;
+    div.dataset.index = index;
+    div.innerHTML = `
+      <div class="inner">
         <div class="front"><img src="${card.img}" alt=""></div>
         <div class="back"><img src="files/verso.jpg" alt=""></div>
       </div>`;
-    cardEl.addEventListener("click", () => {
-      if (data.turn !== player) return;
+    div.addEventListener("click", () => {
+      if (data.turn !== player || isFlipped || isMatched || data.flipped.length >= 2) return;
       handleCardClick(index, card.id);
     });
-    board.appendChild(cardEl);
+    game.appendChild(div);
   });
 }
 
 async function handleCardClick(index, id) {
   const snap = await get(gameRef);
   const data = snap.val();
-  if (!data || data.turn !== player || data.flipped?.length >= 2) return;
-  if (data.matched?.includes(id) || data.flipped?.includes(index)) return;
+  if (!data || data.flipped.includes(index) || data.matched.includes(id)) return;
 
-  const newFlipped = data.flipped ? [...data.flipped, index] : [index];
+  const newFlipped = [...data.flipped, index];
+  if (newFlipped.length === 1) flip1.play();
+  else flip2.play();
+
   update(gameRef, { flipped: newFlipped });
 
   if (newFlipped.length === 2) {
@@ -112,14 +48,15 @@ async function handleCardClick(index, id) {
   }
 }
 
-function checkMatch(flippedIndices, data) {
-  const [i1, i2] = flippedIndices;
+function checkMatch(indices, data) {
+  const [i1, i2] = indices;
   const c1 = data.board[i1];
   const c2 = data.board[i2];
-  let matched = data.matched || [];
-  let scores = data.scores;
+
+  let matched = [...data.matched];
+  let scores = { ...data.scores };
   let turn = data.turn;
-  let move = (data.moves || 0) + 1;
+  let moves = (data.moves || 0) + 1;
 
   if (c1.id === c2.id && i1 !== i2) {
     matched.push(c1.id);
@@ -131,9 +68,9 @@ function checkMatch(flippedIndices, data) {
   update(gameRef, {
     flipped: [],
     matched,
+    scores,
     turn,
-    moves: move,
-    scores
+    moves
   });
 }
 
@@ -142,10 +79,10 @@ function updateStatus(data) {
   document.getElementById("score2").textContent = data.scores?.joueur2 || 0;
   document.getElementById("move-count").textContent = data.moves || 0;
 
-  const now = Date.now();
-  const elapsed = Math.floor((now - (data.timeStart || now)) / 1000);
+  const elapsed = Math.floor((Date.now() - (data.timeStart || Date.now())) / 1000);
   document.getElementById("timer").textContent = `${elapsed}s`;
-  document.getElementById("start-time").textContent = new Date(data.timeStart).toLocaleTimeString();
+  const start = new Date(data.timeStart);
+  document.getElementById("start-time").textContent = start.toLocaleTimeString();
 
   const p1 = document.getElementById("player1-name");
   const p2 = document.getElementById("player2-name");
@@ -155,18 +92,26 @@ function updateStatus(data) {
   if (data.turn === "joueur2") p2.classList.add("active-player");
 }
 
+function setupListeners() {
+  onValue(gameRef, snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
+    if (!data.board || !data.scores) return;
+    renderGame(data);
+    updateStatus(data);
+  });
+}
+
 function setupResetButton() {
   const btn = document.getElementById("reset-button");
-  if (!btn) return;
-  if (player === "joueur1") btn.disabled = false;
-  else btn.disabled = true;
-
+  if (!btn || player !== 'joueur1') return;
   btn.addEventListener("click", () => {
-    if (player === "joueur1") {
+    if (confirm("Voulez-vous vraiment réinitialiser le jeu ?")) {
       remove(gameRef);
-      window.location.reload();
+      location.reload();
     }
   });
 }
 
-init();
+setupListeners();
+setupResetButton();
