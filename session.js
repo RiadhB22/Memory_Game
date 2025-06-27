@@ -1,7 +1,19 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getDatabase, ref, get, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-import { initGame, renderGame } from './memory-core.js';
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  get,
+  update,
+  remove
+} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import {
+  initGame,
+  renderGame
+} from "./memory-core.js";
 
+// Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
   authDomain: "memorygame-70305.firebaseapp.com",
@@ -14,88 +26,64 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const gameRef = ref(db, 'game');
+const gameRef = ref(db, "game");
 
 let sessionId = localStorage.getItem("memory_session_id");
 if (!sessionId) {
   sessionId = crypto.randomUUID();
   localStorage.setItem("memory_session_id", sessionId);
 }
-sessionStorage.setItem("sessionId", sessionId);
 
-let player = sessionStorage.getItem("player");
+let currentPlayer = localStorage.getItem("player");
+let nom = localStorage.getItem("nom");
 
-async function detectPlayerRole() {
+(async () => {
   const snap = await get(gameRef);
   const data = snap.val();
-  const nom = prompt("Entrez votre nom :");
-  if (!nom) return;
+  const session = sessionId;
 
-  if (!data) {
+  if (!data || !data.sessions?.joueur1) {
+    currentPlayer = "joueur1";
+    nom = prompt("Entrez votre nom (Joueur 1) :");
     await set(gameRef, {
-      sessions: { joueur1: sessionId },
+      started: false,
+      board: [],
+      flipped: [],
+      matched: [],
+      turn: "joueur1",
+      sessions: { joueur1: session },
       scores: { joueur1: 0, joueur2: 0 },
-      names: { joueur1: nom }
+      moves: 0
     });
-    player = "joueur1";
-  } else if (!data.sessions?.joueur1) {
-    await update(gameRef, {
-      'sessions/joueur1': sessionId,
-      'names/joueur1': nom
-    });
-    player = "joueur1";
   } else if (!data.sessions?.joueur2) {
+    currentPlayer = "joueur2";
+    nom = prompt("Entrez votre nom (Joueur 2) :");
     await update(gameRef, {
-      'sessions/joueur2': sessionId,
-      'names/joueur2': nom
+      sessions: { ...data.sessions, joueur2: session }
     });
-    player = "joueur2";
   } else {
     alert("Deux joueurs sont déjà connectés.");
     return;
   }
-  sessionStorage.setItem("player", player);
-  sessionStorage.setItem("nomJoueur", nom);
-  updatePlayerNamesImmediately(nom, player);
-}
 
-function updatePlayerNamesImmediately(nom, joueur) {
-  if (joueur === "joueur1") {
-    document.getElementById("player1-name").textContent = nom;
-  } else if (joueur === "joueur2") {
-    document.getElementById("player2-name").textContent = nom;
-  }
-}
+  localStorage.setItem("player", currentPlayer);
+  localStorage.setItem("nom", nom);
 
-function listenToGameState() {
-  onValue(gameRef, snapshot => {
-    const data = snapshot.val();
-    if (!data || !data.board) return;
+  document.getElementById(`${currentPlayer}-name`).textContent = `👤 ${nom} :`;
 
-    const name1 = data.names?.joueur1 || "Joueur 1";
-    const name2 = data.names?.joueur2 || "Joueur 2";
-    const currentPlayer = sessionStorage.getItem("player");
-
-    document.getElementById("player1-name").textContent = name1;
-    document.getElementById("player2-name").textContent = name2;
-    document.getElementById("reset-button").disabled = currentPlayer !== "joueur1";
-
-    renderGame(data, currentPlayer, gameRef);
-  });
-}
-
-function setupResetButton() {
-  document.getElementById("reset-button").addEventListener("click", () => {
-    if (sessionStorage.getItem("player") !== "joueur1") return;
-    if (!confirm("Voulez-vous vraiment réinitialiser la partie ?")) return;
-    remove(gameRef);
-    window.location.reload();
-  });
-}
-
-(async function start() {
-  await detectPlayerRole();
   await initGame(gameRef);
-  listenToGameState();
-  setupResetButton();
+
+  document.getElementById("reset-button").disabled = currentPlayer !== "joueur1";
+  document.getElementById("reset-button").addEventListener("click", async () => {
+    if (currentPlayer === "joueur1") {
+      await remove(gameRef);
+      location.reload();
+    }
+  });
+
+  onValue(gameRef, (snapshot) => {
+    const gameData = snapshot.val();
+    if (!gameData || !gameData.board) return;
+    renderGame(gameData, currentPlayer, gameRef);
+  });
 })();
