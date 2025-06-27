@@ -11,7 +11,7 @@ export async function initGame(gameRef) {
       cards.push({ id: i, img: `files/${i}-2.jpg` });
     }
     const shuffled = cards.sort(() => 0.5 - Math.random());
-    await set(gameRef, { ...data, board: shuffled, flipped: [], matched: [] });
+    await set(gameRef, { ...data, board: shuffled, flipped: [], matched: [], moves: 0 });
   }
 }
 
@@ -44,7 +44,7 @@ export function renderGame(data, currentPlayer, gameRef) {
 
   gameContainer.style.display = 'grid';
   gameContainer.style.gridTemplateColumns = 'repeat(8, 1fr)';
-  gameContainer.style.gap = '10px';
+  gameContainer.style.gap = '8px';
   gameContainer.style.justifyContent = 'center';
 
   updateHeader(data, currentPlayer);
