@@ -45,6 +45,7 @@ export function renderGame(data, currentPlayer, gameRef) {
   gameContainer.style.display = 'grid';
   gameContainer.style.gridTemplateColumns = 'repeat(8, 1fr)';
   gameContainer.style.gap = '10px';
+  gameContainer.style.justifyContent = 'center';
 
   updateHeader(data, currentPlayer);
 }
@@ -114,4 +115,10 @@ async function checkMatch([i1, i2], data, gameRef) {
     turn,
     moves
   });
+}
+
+export async function resetGame(gameRef) {
+  const { remove } = await import('https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js');
+  await remove(gameRef);
+  window.location.reload();
 }
