@@ -37,6 +37,10 @@ header {
   margin-bottom: 10px;
 }
 
+.status-bar span {
+  white-space: nowrap;
+}
+
 .active-player {
   color: #e74c3c;
   font-weight: bold;
@@ -86,6 +90,12 @@ header {
 .front {
   transform: rotateY(180deg);
   background: #fff;
+}
+
+.front img, .back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .back {
