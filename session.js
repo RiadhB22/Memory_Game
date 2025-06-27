@@ -1,6 +1,7 @@
+// ✅ session.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-import { initGame } from "./memory-core.js";
+import { getDatabase, ref, get, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { initGame, renderGame, handleCardClick } from './memory-core.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
@@ -14,7 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const gameRef = ref(db, "game");
+const gameRef = ref(db, 'game');
 
 let sessionId = localStorage.getItem("memory_session_id");
 if (!sessionId) {
@@ -24,42 +25,68 @@ if (!sessionId) {
 sessionStorage.setItem("sessionId", sessionId);
 
 let player = sessionStorage.getItem("player");
-let nom = "";
 
-(async () => {
-  const snapshot = await get(gameRef);
-  const data = snapshot.val();
+async function detectPlayerRole() {
+  const snap = await get(gameRef);
+  const data = snap.val();
+  const nom = prompt("Entrez votre nom :");
+  if (!nom) return;
 
-  nom = prompt("Entrez votre nom :")?.trim();
-  if (!nom) nom = "Anonyme";
-
-  if (!data || !data.sessions?.joueur1) {
-    player = "joueur1";
-    sessionStorage.setItem("player", "joueur1");
-    sessionStorage.setItem("nomJoueur1", nom);
+  if (!data) {
     await set(gameRef, {
-      started: false,
       sessions: { joueur1: sessionId },
-      noms: { joueur1: nom }
+      scores: { joueur1: 0, joueur2: 0 },
+      names: { joueur1: nom }
     });
+    player = "joueur1";
+  } else if (!data.sessions?.joueur1) {
+    await update(gameRef, {
+      'sessions/joueur1': sessionId,
+      'names/joueur1': nom
+    });
+    player = "joueur1";
   } else if (!data.sessions?.joueur2) {
-    player = "joueur2";
-    sessionStorage.setItem("player", "joueur2");
-    sessionStorage.setItem("nomJoueur2", nom);
-    await set(gameRef, {
-      ...data,
-      sessions: { ...data.sessions, joueur2: sessionId },
-      noms: { ...data.noms, joueur2: nom }
+    await update(gameRef, {
+      'sessions/joueur2': sessionId,
+      'names/joueur2': nom
     });
+    player = "joueur2";
   } else {
-    alert("⚠️ Deux joueurs sont déjà connectés.");
+    alert("Deux joueurs sont déjà connectés.");
     return;
   }
+  sessionStorage.setItem("player", player);
+  sessionStorage.setItem("nomJoueur", nom);
+}
 
-  // Mise à jour interface immédiatement
-  document.getElementById("player1-name").textContent = `Joueur 1 : ${sessionStorage.getItem("nomJoueur1") || "---"}`;
-  document.getElementById("player2-name").textContent = `Joueur 2 : ${sessionStorage.getItem("nomJoueur2") || "---"}`;
-  document.getElementById("reset-button").disabled = player !== "joueur1";
+function listenToGameState() {
+  onValue(gameRef, snapshot => {
+    const data = snapshot.val();
+    if (!data || !data.board) return;
 
-  initGame(db, player);
+    const name1 = data.names?.joueur1 || "Joueur 1";
+    const name2 = data.names?.joueur2 || "Joueur 2";
+    const currentPlayer = sessionStorage.getItem("player");
+
+    document.getElementById("player1-name").textContent = name1;
+    document.getElementById("player2-name").textContent = name2;
+    document.getElementById("reset-button").disabled = currentPlayer !== "joueur1";
+
+    renderGame(data, currentPlayer, gameRef);
+  });
+}
+
+function setupResetButton() {
+  document.getElementById("reset-button").addEventListener("click", () => {
+    if (sessionStorage.getItem("player") !== "joueur1") return;
+    remove(gameRef);
+    window.location.reload();
+  });
+}
+
+(async function start() {
+  await detectPlayerRole();
+  await initGame(gameRef);
+  listenToGameState();
+  setupResetButton();
 })();
