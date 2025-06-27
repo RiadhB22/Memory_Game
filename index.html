@@ -1,29 +1,21 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="session.js" defer></script>
 </head>
 <body>
   <h1>🧠 Jeu Memory : TAKWEEN</h1>
-
-  <div class="status-bar">
-    <div id="player1-name" class="player">Joueur 1 :</div>
-    <div id="score1" class="score">0</div>
-
-    <div id="player2-name" class="player">Joueur 2 :</div>
-    <div id="score2" class="score">0</div>
-
-    <div>🌀 Coups : <span id="move-count">0</span></div>
-    <div>⏱ Temps : <span id="time">0s</span></div>
-    <div>🕰️ Début : <span id="start-time">--:--</span></div>
-    <button id="reset-button">🔁 Réinitialiser</button>
+  <div id="header">
+    <div id="player1-name">Joueur 1 : </div>
+    <div id="player2-name">Joueur 2 : </div>
+    <div>🎯 Coups : <span id="move-count">0</span></div>
+    <div>⏱ Temps : <span id="duration">0s</span></div>
+    <div>🕒 Début : <span id="start-time">--:--</span></div>
+    <button id="reset-button" disabled>🔄 Réinitialiser</button>
   </div>
-
-  <div id="game" class="board"></div>
-
-  <script type="module" src="session.js"></script>
+  <div id="game" class="game-grid"></div>
 </body>
 </html>
