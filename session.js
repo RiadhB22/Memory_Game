@@ -1,7 +1,6 @@
-// ✅ session.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getDatabase, ref, get, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-import { initGame, renderGame, handleCardClick } from './memory-core.js';
+import { initGame, renderGame } from './memory-core.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
