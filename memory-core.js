@@ -42,6 +42,10 @@ export function renderGame(data, currentPlayer, gameRef) {
     gameContainer.appendChild(cardEl);
   });
 
+  gameContainer.style.display = 'grid';
+  gameContainer.style.gridTemplateColumns = 'repeat(8, 1fr)';
+  gameContainer.style.gap = '10px';
+
   updateHeader(data, currentPlayer);
 }
 
