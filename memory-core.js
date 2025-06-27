@@ -11,7 +11,7 @@ export async function initGame(gameRef) {
       cards.push({ id: i, img: `files/${i}-2.jpg` });
     }
     const shuffled = cards.sort(() => 0.5 - Math.random());
-    await set(gameRef, { ...data, board: shuffled });
+    await set(gameRef, { ...data, board: shuffled, flipped: [], matched: [] });
   }
 }
 
@@ -19,6 +19,8 @@ export function renderGame(data, currentPlayer, gameRef) {
   const gameContainer = document.getElementById("game");
   if (!gameContainer) return;
   gameContainer.innerHTML = "";
+
+  if (!data.board || data.board.length === 0) return;
 
   data.board.forEach((card, index) => {
     const isFlipped = data.flipped?.includes(index);
@@ -48,14 +50,26 @@ function updateHeader(data, currentPlayer) {
   const p2 = document.getElementById("player2-name");
   const turn = data.turn;
 
-  p1.classList.remove("active");
-  p2.classList.remove("active");
-  if (turn === "joueur1") p1.classList.add("active");
-  if (turn === "joueur2") p2.classList.add("active");
+  const allNames = {
+    joueur1: data.names?.joueur1 || "Joueur 1",
+    joueur2: data.names?.joueur2 || "Joueur 2"
+  };
 
-  document.getElementById("score1").textContent = data.scores?.joueur1 || 0;
-  document.getElementById("score2").textContent = data.scores?.joueur2 || 0;
+  if (p1 && p2) {
+    p1.classList.remove("active");
+    p2.classList.remove("active");
+
+    if (turn === "joueur1") p1.classList.add("active");
+    if (turn === "joueur2") p2.classList.add("active");
+
+    p1.innerHTML = `👤 ${allNames.joueur1} : <span id="score1">${data.scores?.joueur1 || 0}</span>`;
+    p2.innerHTML = `👤 ${allNames.joueur2} : <span id="score2">${data.scores?.joueur2 || 0}</span>`;
+  }
+
   document.getElementById("move-count").textContent = data.moves || 0;
+
+  const btn = document.getElementById("reset-button");
+  if (btn) btn.disabled = currentPlayer !== "joueur1";
 }
 
 export async function handleCardClick(index, id, gameRef, currentPlayer) {
