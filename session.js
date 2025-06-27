@@ -45,6 +45,7 @@ async function detectPlayerRole() {
       noms: { joueur1: nom }
     });
     afficherAttente();
+    updateHeader(nom, null);
     return;
   }
 
@@ -57,6 +58,7 @@ async function detectPlayerRole() {
       noms: { ...data.noms, joueur1: nom }
     });
     afficherAttente();
+    updateHeader(nom, data.noms?.joueur2 || null);
     return;
   }
 
@@ -76,6 +78,7 @@ async function detectPlayerRole() {
       scores: { joueur1: 0, joueur2: 0 },
       timeStart: Date.now()
     });
+    updateHeader(data.noms?.joueur1 || null, nom);
     return;
   }
 
@@ -96,7 +99,23 @@ function melangerCartes() {
   return cartes.sort(() => 0.5 - Math.random());
 }
 
+function updateHeader(nom1, nom2) {
+  const p1 = document.getElementById("player1-name");
+  const p2 = document.getElementById("player2-name");
+  if (p1) p1.textContent = `${nom1 || 'Joueur 1'}:`;
+  if (p2) p2.textContent = `${nom2 || 'Joueur 2'}:`;
+}
+
+function disableResetIfNotJoueur1() {
+  const resetBtn = document.getElementById("reset-button");
+  if (resetBtn && player !== "joueur1") {
+    resetBtn.disabled = true;
+  }
+}
+
 detectPlayerRole();
+
+disableResetIfNotJoueur1();
 
 onValue(gameRef, snapshot => {
   const data = snapshot.val();
