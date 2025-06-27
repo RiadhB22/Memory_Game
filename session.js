@@ -1,6 +1,6 @@
-// session.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { initGame } from "./memory-core.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
@@ -14,7 +14,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const gameRef = ref(db, 'game');
+const gameRef = ref(db, "game");
 
 let sessionId = localStorage.getItem("memory_session_id");
 if (!sessionId) {
@@ -24,102 +24,42 @@ if (!sessionId) {
 sessionStorage.setItem("sessionId", sessionId);
 
 let player = sessionStorage.getItem("player");
+let nom = "";
 
-async function detectPlayerRole() {
-  const snap = await get(gameRef);
-  const data = snap.val();
+(async () => {
+  const snapshot = await get(gameRef);
+  const data = snapshot.val();
 
-  const nom = prompt("Entrez votre nom :");
-  if (!nom) {
-    alert("Nom requis pour jouer.");
-    return;
-  }
+  nom = prompt("Entrez votre nom :")?.trim();
+  if (!nom) nom = "Anonyme";
 
-  if (!data) {
+  if (!data || !data.sessions?.joueur1) {
+    player = "joueur1";
     sessionStorage.setItem("player", "joueur1");
     sessionStorage.setItem("nomJoueur1", nom);
-    player = "joueur1";
     await set(gameRef, {
       started: false,
       sessions: { joueur1: sessionId },
       noms: { joueur1: nom }
     });
-    afficherAttente();
-    updateHeader(nom, null);
-    return;
-  }
-
-  if (!data.sessions?.joueur1) {
-    sessionStorage.setItem("player", "joueur1");
-    sessionStorage.setItem("nomJoueur1", nom);
-    player = "joueur1";
-    await update(gameRef, {
-      sessions: { ...data.sessions, joueur1: sessionId },
-      noms: { ...data.noms, joueur1: nom }
-    });
-    afficherAttente();
-    updateHeader(nom, data.noms?.joueur2 || null);
-    return;
-  }
-
-  if (!data.sessions?.joueur2) {
+  } else if (!data.sessions?.joueur2) {
+    player = "joueur2";
     sessionStorage.setItem("player", "joueur2");
     sessionStorage.setItem("nomJoueur2", nom);
-    player = "joueur2";
-    await update(gameRef, {
+    await set(gameRef, {
+      ...data,
       sessions: { ...data.sessions, joueur2: sessionId },
-      noms: { ...data.noms, joueur2: nom },
-      started: true,
-      board: melangerCartes(),
-      matched: [],
-      flipped: [],
-      turn: "joueur1",
-      moves: 0,
-      scores: { joueur1: 0, joueur2: 0 },
-      timeStart: Date.now()
+      noms: { ...data.noms, joueur2: nom }
     });
-    updateHeader(data.noms?.joueur1 || null, nom);
+  } else {
+    alert("⚠️ Deux joueurs sont déjà connectés.");
     return;
   }
 
-  alert("Deux joueurs sont déjà connectés.");
-}
+  // Mise à jour interface immédiatement
+  document.getElementById("player1-name").textContent = `Joueur 1 : ${sessionStorage.getItem("nomJoueur1") || "---"}`;
+  document.getElementById("player2-name").textContent = `Joueur 2 : ${sessionStorage.getItem("nomJoueur2") || "---"}`;
+  document.getElementById("reset-button").disabled = player !== "joueur1";
 
-function afficherAttente() {
-  const el = document.getElementById("waiting-message");
-  if (el) el.textContent = "⏳ En attente du deuxième joueur...";
-}
-
-function melangerCartes() {
-  const cartes = [];
-  for (let i = 1; i <= 20; i++) {
-    cartes.push({ id: i, img: `files/${i}-1.jpg` });
-    cartes.push({ id: i, img: `files/${i}-2.jpg` });
-  }
-  return cartes.sort(() => 0.5 - Math.random());
-}
-
-function updateHeader(nom1, nom2) {
-  const p1 = document.getElementById("player1-name");
-  const p2 = document.getElementById("player2-name");
-  if (p1) p1.textContent = `${nom1 || 'Joueur 1'}:`;
-  if (p2) p2.textContent = `${nom2 || 'Joueur 2'}:`;
-}
-
-function disableResetIfNotJoueur1() {
-  const resetBtn = document.getElementById("reset-button");
-  if (resetBtn && player !== "joueur1") {
-    resetBtn.disabled = true;
-  }
-}
-
-detectPlayerRole();
-
-disableResetIfNotJoueur1();
-
-onValue(gameRef, snapshot => {
-  const data = snapshot.val();
-  if (!data?.noms) return;
-  document.getElementById("player1-name").textContent = `${data.turn === 'joueur1' ? '✋ ' : ''}${data.noms.joueur1 || 'Joueur 1'}:`;
-  document.getElementById("player2-name").textContent = `${data.turn === 'joueur2' ? '✋ ' : ''}${data.noms.joueur2 || 'Joueur 2'}:`;
-});
+  initGame(db, player);
+})();
