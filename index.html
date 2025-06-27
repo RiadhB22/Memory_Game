@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>🧠 Jeu Memory : TAKWEEN</header>
-  <div class="status-bar">
+  <h1>🧠 Jeu Memory : TAKWEEN</h1>
+  <div id="status-bar">
     <span id="player1-name">Joueur 1</span>
-    <span id="score1">0</span>
+    <span id="score1">0</span> |
     <span id="player2-name">Joueur 2</span>
-    <span id="score2">0</span>
-    <span>🕒 <span id="timer">0</span></span>
-    <span>🗓 <span id="start-time">--:--</span></span>
-    <span>🔁 Coups : <span id="move-count">0</span></span>
-    <button id="reset-button" disabled>🔄 Rejouer</button>
+    <span id="score2">0</span> |
+    Coups : <span id="move-count">0</span> |
+    ⏱️ Durée : <span id="timer">0s</span> |
+    🕒 Début : <span id="start-time">-</span>
   </div>
-  <div id="game"></div>
+  <button id="reset-button">🔄 Rejouer</button>
+  <div id="game" class="board"></div>
+
   <script type="module" src="session.js"></script>
 </body>
 </html>
