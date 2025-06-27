@@ -16,11 +16,13 @@ let currentPlayer = null;
 async function setup() {
   const snap = await get(gameRef);
   const data = snap.val();
+  const id = crypto.randomUUID();
 
+  // Si aucune session n'existe
   if (!data || !data.sessions?.joueur1 || !data.sessions?.joueur2) {
     const name = prompt("Entrez votre nom :");
-    const id = crypto.randomUUID();
-    if (!data || !data.sessions?.joueur1) {
+
+    if (!data?.sessions?.joueur1) {
       await update(gameRef, {
         "sessions/joueur1": id,
         "names/joueur1": name,
@@ -38,33 +40,32 @@ async function setup() {
         "timeStart": Date.now()
       });
       currentPlayer = "joueur2";
-    } else {
-      alert("Deux joueurs sont déjà connectés.");
-      return;
     }
+
+    // Créer le plateau s’il n’existe pas
+    await initGame(gameRef);
+
+    // Afficher immédiatement le jeu pour joueur 1
+    const updatedSnap = await get(gameRef);
+    renderGame(updatedSnap.val(), currentPlayer, gameRef);
   } else {
-    const id = crypto.randomUUID();
-    if (id === data.sessions?.joueur1) currentPlayer = "joueur1";
-    else if (id === data.sessions?.joueur2) currentPlayer = "joueur2";
-    else {
-      alert("Deux joueurs sont déjà connectés.");
-      return;
-    }
+    alert("Deux joueurs sont déjà connectés.");
+    return;
   }
 
+  // Écoute Firebase pour synchroniser
   onValue(gameRef, (snap) => {
-    const newData = snap.val();
-    renderGame(newData, currentPlayer, gameRef);
-    updateTime(newData.timeStart);
+    const data = snap.val();
+    renderGame(data, currentPlayer, gameRef);
+    updateTime(data.timeStart);
   });
 
+  // Réinitialisation (seulement pour joueur1)
   document.getElementById("reset-button").addEventListener("click", async () => {
     if (currentPlayer !== "joueur1") return;
     await remove(gameRef);
     location.reload();
   });
-
-  initGame(gameRef);
 }
 
 function updateTime(startTime) {
