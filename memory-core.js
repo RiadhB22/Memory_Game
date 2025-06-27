@@ -1,4 +1,3 @@
-// ✅ memory-core.js
 const images = [];
 for (let i = 1; i <= 20; i++) {
   images.push({ id: i, img: `files/${i}-1.jpg` });
@@ -11,53 +10,50 @@ const sounds = {
 };
 
 export async function initGame(gameRef) {
-  const { get } = await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js");
+  const { get, set } = await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js");
   const snap = await get(gameRef);
   const data = snap.val();
 
-  if (data?.started) return;
-
-  const name1 = data?.names?.joueur1;
-  const name2 = data?.names?.joueur2;
-
-  if (name1 && name2) {
+  if (!data.started && data.names?.joueur1 && data.names?.joueur2) {
     const cards = [...images].sort(() => 0.5 - Math.random());
-    const startData = {
+    await set(gameRef, {
+      ...data,
       started: true,
-      turn: "joueur1",
       board: cards,
       matched: [],
       flipped: [],
+      turn: "joueur1",
       moves: 0,
       scores: { joueur1: 0, joueur2: 0 },
       timeStart: Date.now()
-    };
-    const { set } = await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js");
-    set(gameRef, { ...data, ...startData });
+    });
   }
 }
 
 export function renderGame(data, player, gameRef) {
   const game = document.getElementById("game");
   game.innerHTML = "";
-  data.board.forEach((card, index) => {
+
+  data.board?.forEach((card, index) => {
     const isFlipped = data.flipped?.includes(index);
     const isMatched = data.matched?.includes(card.id);
+
     const cardEl = document.createElement("div");
     cardEl.className = "card";
     cardEl.innerHTML = `
       <div class="inner ${isFlipped || isMatched ? "flipped" : ""} ${isMatched ? "matched" : ""}">
         <div class="front"><img src="${card.img}" /></div>
         <div class="back"><img src="files/verso.jpg" /></div>
-      </div>
-    `;
-    if (!isMatched && !isFlipped && data.turn === player) {
+      </div>`;
+
+    if (!isFlipped && !isMatched && data.turn === player) {
       cardEl.addEventListener("click", () => handleCardClick(index, card.id, data, gameRef, player));
     }
+
     game.appendChild(cardEl);
   });
 
-  updateStatus(data);
+  updateStatus(data, player);
 }
 
 async function handleCardClick(index, id, data, gameRef, player) {
@@ -65,7 +61,7 @@ async function handleCardClick(index, id, data, gameRef, player) {
   if (data.flipped?.length >= 2 || data.turn !== player || data.flipped?.includes(index)) return;
 
   const flipped = [...(data.flipped || []), index];
-  sounds[flipped.length === 1 ? "flip1" : "flip2"].play();
+  sounds[flipped.length === 1 ? 'flip1' : 'flip2'].play();
   await update(gameRef, { flipped });
 
   if (flipped.length === 2) {
@@ -79,7 +75,7 @@ async function handleCardClick(index, id, data, gameRef, player) {
       let matched = newData.matched || [];
       let scores = newData.scores;
       let turn = newData.turn;
-      let moves = newData.moves + 1;
+      let move = newData.moves + 1;
 
       if (c1.id === c2.id && i1 !== i2) {
         matched.push(c1.id);
@@ -93,13 +89,13 @@ async function handleCardClick(index, id, data, gameRef, player) {
         matched,
         scores,
         turn,
-        moves
+        moves: move
       });
     }, 800);
   }
 }
 
-function updateStatus(data) {
+function updateStatus(data, player) {
   document.getElementById("score1").textContent = data.scores?.joueur1 || 0;
   document.getElementById("score2").textContent = data.scores?.joueur2 || 0;
   document.getElementById("move-count").textContent = data.moves || 0;
@@ -107,9 +103,6 @@ function updateStatus(data) {
   const now = Date.now();
   const elapsed = Math.floor((now - (data.timeStart || now)) / 1000);
   document.getElementById("timer").textContent = `${elapsed}s`;
-
-  const startTime = new Date(data.timeStart);
-  document.getElementById("start-time").textContent = startTime.toLocaleTimeString();
 
   const p1 = document.getElementById("player1-name");
   const p2 = document.getElementById("player2-name");
