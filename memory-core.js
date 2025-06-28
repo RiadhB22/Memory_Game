@@ -1,4 +1,4 @@
-// ✅ memory-core.js
+// ✅ memory-core.js corrigé et enrichi
 
 export async function initGame(gameRef) {
   const { get, set } = await import('https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js');
@@ -64,11 +64,15 @@ function updateHeader(data, currentPlayer) {
     p1.classList.remove("active");
     p2.classList.remove("active");
 
-    if (turn === "joueur1") p1.classList.add("active");
-    if (turn === "joueur2") p2.classList.add("active");
-
-    p1.innerHTML = `👤 ${allNames.joueur1} : <span id="score1">${data.scores?.joueur1 || 0}</span>`;
-    p2.innerHTML = `👤 ${allNames.joueur2} : <span id="score2">${data.scores?.joueur2 || 0}</span>`;
+    if (turn === "joueur1") {
+      p1.classList.add("active");
+      p1.innerHTML = `🖐️ 👤 ${allNames.joueur1} : <span id="score1">${data.scores?.joueur1 || 0}</span>`;
+      p2.innerHTML = `👤 ${allNames.joueur2} : <span id="score2">${data.scores?.joueur2 || 0}</span>`;
+    } else {
+      p2.classList.add("active");
+      p1.innerHTML = `👤 ${allNames.joueur1} : <span id="score1">${data.scores?.joueur1 || 0}</span>`;
+      p2.innerHTML = `🖐️ 👤 ${allNames.joueur2} : <span id="score2">${data.scores?.joueur2 || 0}</span>`;
+    }
   }
 
   document.getElementById("move-count").textContent = data.moves || 0;
