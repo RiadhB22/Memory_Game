@@ -1,5 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+// ✅ session.js : gestion des joueurs, noms, rôles, et synchro Firebase
+
+import { getDatabase, ref, get, update, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { initGame, renderGame, resetGame } from "./memory-core.js";
 
 const firebaseConfig = {
@@ -12,53 +13,48 @@ const firebaseConfig = {
   appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const gameRef = ref(db, 'game');
+const app = firebase.initializeApp(firebaseConfig);
+const db = getDatabase();
+const gameRef = ref(db, "game");
 
-let player;
-let nom;
+let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
+localStorage.setItem("sessionId", sessionId);
 
-async function detectPlayer() {
+let currentPlayer = null;
+
+async function setupPlayer() {
   const snap = await get(gameRef);
   const data = snap.val();
+  let player = null;
 
-  const nom1 = data?.names?.joueur1 || null;
-  const nom2 = data?.names?.joueur2 || null;
+  const name = prompt(data?.names?.joueur1 ? "Entrez le nom du 2ème joueur :" : "Entrez le nom du 1er joueur :");
 
-  if (!nom1) {
-    nom = prompt("Entrez votre nom (Joueur 1) :");
+  if (!data || !data.sessions?.joueur1) {
     player = "joueur1";
-    await set(gameRef, {
-      ...data,
-      names: { ...data?.names, joueur1: nom },
-      scores: { ...data?.scores, joueur1: 0, joueur2: 0 },
-      turn: "joueur1"
-    });
-  } else if (!nom2) {
-    nom = prompt("Entrez votre nom (Joueur 2) :");
+  } else if (!data.sessions?.joueur2) {
     player = "joueur2";
-    await set(gameRef, {
-      ...data,
-      names: { ...data?.names, joueur2: nom },
-      scores: { ...data?.scores, joueur1: 0, joueur2: 0 }
-    });
   } else {
     alert("Deux joueurs sont déjà connectés.");
-    throw new Error("Deux joueurs déjà connectés");
+    return;
   }
+
+  currentPlayer = player;
+  await update(gameRef, {
+    [`sessions/${player}`]: sessionId,
+    [`names/${player}`]: name
+  });
+
+  document.getElementById("reset-button").addEventListener("click", () => {
+    if (currentPlayer === "joueur1") resetGame(gameRef);
+  });
+
+  onValue(gameRef, (snapshot) => {
+    const gameData = snapshot.val();
+    if (!gameData) return;
+    renderGame(gameData, currentPlayer, gameRef);
+  });
+
+  await initGame(gameRef);
 }
 
-await detectPlayer();
-await initGame(gameRef);
-
-onValue(gameRef, (snapshot) => {
-  const data = snapshot.val();
-  if (data) {
-    renderGame(data, player, gameRef);
-  }
-});
-
-document.getElementById("reset-button").addEventListener("click", () => {
-  if (player === "joueur1") resetGame(gameRef);
-});
+setupPlayer();
