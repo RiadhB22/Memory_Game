@@ -1,86 +1,64 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import {
-  getDatabase, ref, get, set, update, onValue, remove
-} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-import { initGame, renderGame } from "./memory-core.js";
+import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { initGame, renderGame, resetGame } from "./memory-core.js";
 
 const firebaseConfig = {
-  databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app"
+  apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
+  authDomain: "memorygame-70305.firebaseapp.com",
+  databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "memorygame-70305",
+  storageBucket: "memorygame-70305.appspot.com",
+  messagingSenderId: "700177553228",
+  appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const gameRef = ref(db, "game");
-let currentPlayer = null;
+const gameRef = ref(db, 'game');
 
-async function setup() {
+let player;
+let nom;
+
+async function detectPlayer() {
   const snap = await get(gameRef);
   const data = snap.val();
-  const id = crypto.randomUUID();
 
-  // Si aucune session n'existe
-  if (!data || !data.sessions?.joueur1 || !data.sessions?.joueur2) {
-    const name = prompt("Entrez votre nom :");
+  const nom1 = data?.names?.joueur1 || null;
+  const nom2 = data?.names?.joueur2 || null;
 
-    if (!data?.sessions?.joueur1) {
-      await update(gameRef, {
-        "sessions/joueur1": id,
-        "names/joueur1": name,
-        "scores/joueur1": 0,
-        "turn": "joueur1",
-        "started": false
-      });
-      currentPlayer = "joueur1";
-    } else if (!data.sessions?.joueur2) {
-      await update(gameRef, {
-        "sessions/joueur2": id,
-        "names/joueur2": name,
-        "scores/joueur2": 0,
-        "started": true,
-        "timeStart": Date.now()
-      });
-      currentPlayer = "joueur2";
-    }
-
-    // Créer le plateau s’il n’existe pas
-    await initGame(gameRef);
-
-    // Afficher immédiatement le jeu pour joueur 1
-    const updatedSnap = await get(gameRef);
-    renderGame(updatedSnap.val(), currentPlayer, gameRef);
+  if (!nom1) {
+    nom = prompt("Entrez votre nom (Joueur 1) :");
+    player = "joueur1";
+    await set(gameRef, {
+      ...data,
+      names: { ...data?.names, joueur1: nom },
+      scores: { ...data?.scores, joueur1: 0, joueur2: 0 },
+      turn: "joueur1"
+    });
+  } else if (!nom2) {
+    nom = prompt("Entrez votre nom (Joueur 2) :");
+    player = "joueur2";
+    await set(gameRef, {
+      ...data,
+      names: { ...data?.names, joueur2: nom },
+      scores: { ...data?.scores, joueur1: 0, joueur2: 0 }
+    });
   } else {
     alert("Deux joueurs sont déjà connectés.");
-    return;
+    throw new Error("Deux joueurs déjà connectés");
   }
-
-  // Écoute Firebase pour synchroniser
-  onValue(gameRef, (snap) => {
-    const data = snap.val();
-    renderGame(data, currentPlayer, gameRef);
-    updateTime(data.timeStart);
-  });
-
-  // Réinitialisation (seulement pour joueur1)
-  document.getElementById("reset-button").addEventListener("click", async () => {
-    if (currentPlayer !== "joueur1") return;
-    await remove(gameRef);
-    location.reload();
-  });
 }
 
-function updateTime(startTime) {
-  if (!startTime) return;
-  const durationEl = document.getElementById("duration");
-  const startEl = document.getElementById("start-time");
+await detectPlayer();
+await initGame(gameRef);
 
-  const startDate = new Date(startTime);
-  startEl.textContent = `${startDate.getHours()}:${startDate.getMinutes()}`;
+onValue(gameRef, (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    renderGame(data, player, gameRef);
+  }
+});
 
-  setInterval(() => {
-    const now = Date.now();
-    const seconds = Math.floor((now - startTime) / 1000);
-    durationEl.textContent = `${seconds}s`;
-  }, 1000);
-}
-
-setup();
+document.getElementById("reset-button").addEventListener("click", () => {
+  if (player === "joueur1") resetGame(gameRef);
+});
