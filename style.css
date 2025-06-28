@@ -1,81 +1,90 @@
+/* ✅ style.css pour Memory Game TAKWEEN avec entête propre, cartes visibles et retournables */
+
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f4f4f8;
-  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f4f7fa;
   margin: 0;
-  padding: 20px;
+  padding: 0;
+  text-align: center;
 }
 
-.title {
-  font-size: 28px;
-  margin-bottom: 10px;
-  color: #333;
+h1 {
+  font-size: 2em;
+  color: #222;
+  margin-top: 20px;
 }
 
 #header {
-  margin-bottom: 15px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #222;
+  background-color: #e6ecf2;
+  padding: 15px 10px;
+  margin: 15px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  border-radius: 10px;
+  font-size: 1.1em;
 }
 
-#header span.active {
-  color: #0088cc;
-  font-size: 20px;
+#header span {
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 0 3px rgba(0,0,0,0.1);
+}
+
+#header .active {
+  background-color: #d1eaff;
+  font-weight: bold;
+  color: #004080;
 }
 
 #game {
+  margin: 0 auto;
+  padding: 10px;
   display: grid;
-  grid-template-columns: repeat(8, 80px);
-  grid-gap: 8px;
+  grid-template-columns: repeat(8, 100px);
+  gap: 10px;
   justify-content: center;
-  margin-bottom: 20px;
+  max-width: 1000px;
 }
 
 .card {
-  width: 80px;
+  width: 100px;
   height: 100px;
   perspective: 1000px;
-  cursor: pointer;
 }
 
 .card .inner {
-  position: relative;
   width: 100%;
   height: 100%;
   transition: transform 0.6s;
   transform-style: preserve-3d;
+  position: relative;
 }
 
 .card .inner.flipped {
   transform: rotateY(180deg);
 }
 
-.card .inner.matched {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.card .front, .card .back {
+.card .front,
+.card .back {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.card .front {
-  transform: rotateY(180deg);
-}
-
-.card img {
+.card .front img,
+.card .back img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.controls {
-  margin-top: 10px;
+.card .back {
+  transform: rotateY(180deg);
 }
