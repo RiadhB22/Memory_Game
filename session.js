@@ -1,21 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  get,
-  set,
-  onValue,
-  update
-} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { initGame, renderGame, resetGame } from "./memory-core.js";
 
-import {
-  initGame,
-  renderGame,
-  handleCardClick,
-  resetGame
-} from "./memory-core.js";
-
-// Configuration Firebase
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
   authDomain: "memorygame-70305.firebaseapp.com",
@@ -26,60 +13,50 @@ const firebaseConfig = {
   appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
-// Initialisation Firebase
+// Init Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const gameRef = ref(db, "game");
 
-let player = localStorage.getItem("memory_player");
-let name = localStorage.getItem("memory_name");
+let sessionId = localStorage.getItem("memory_session_id");
+if (!sessionId) {
+  sessionId = crypto.randomUUID();
+  localStorage.setItem("memory_session_id", sessionId);
+}
+sessionStorage.setItem("sessionId", sessionId);
 
-async function assignPlayer() {
+let currentPlayer;
+
+async function detectPlayer() {
+  const { get, update } = await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js");
   const snap = await get(gameRef);
   const data = snap.val() || {};
-  const names = data.names || {};
+  const nom = prompt("Entrez votre nom :");
 
-  if (!player || !name) {
-    const promptText =
-      !names.joueur1
-        ? "Entrez votre nom (Joueur 1) :"
-        : !names.joueur2
-        ? "Entrez votre nom (Joueur 2) :"
-        : null;
-
-    if (!promptText) {
-      alert("Deux joueurs sont déjà connectés.");
-      return;
-    }
-
-    name = prompt(promptText);
-    if (!name) return;
-
-    player = !names.joueur1 ? "joueur1" : "joueur2";
-    localStorage.setItem("memory_player", player);
-    localStorage.setItem("memory_name", name);
-
-    await update(gameRef, {
-      names: { ...names, [player]: name }
-    });
+  if (!data.names?.joueur1) {
+    currentPlayer = "joueur1";
+    await update(gameRef, { names: { ...data.names, joueur1: nom } });
+  } else if (!data.names?.joueur2) {
+    currentPlayer = "joueur2";
+    await update(gameRef, { names: { ...data.names, joueur2: nom } });
+  } else {
+    alert("Deux joueurs sont déjà connectés.");
+    return false;
   }
+
+  return true;
 }
 
-await assignPlayer();
-initGame(gameRef);
-
-onValue(gameRef, (snap) => {
-  const data = snap.val();
-  if (!data) return;
-
-  if (!data.names?.joueur1 || !data.names?.joueur2) {
-    document.getElementById("status-message").style.display = "block";
-  } else {
-    document.getElementById("status-message").style.display = "none";
-    renderGame(data, player, gameRef);
-  }
-});
-
 document.getElementById("reset-button").addEventListener("click", () => {
-  if (player === "joueur1") resetGame(gameRef);
+  if (currentPlayer === "joueur1") resetGame(gameRef);
 });
+
+const ready = await detectPlayer();
+if (ready) {
+  await initGame(gameRef);
+  onValue(gameRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+    renderGame(data, currentPlayer, gameRef);
+  });
+}
