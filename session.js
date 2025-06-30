@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { initGame, renderGame, resetGame } from "./memory-core.js";
 
 const firebaseConfig = {
@@ -26,7 +26,6 @@ sessionStorage.setItem("sessionId", sessionId);
 let currentPlayer;
 
 async function detectPlayer() {
-  const { get, update } = await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js");
   const snap = await get(gameRef);
   const data = snap.val() || {};
   const nom = prompt(`Entrez votre nom :\n(Joueur 1: ${data.names?.joueur1 || "?"}, Joueur 2: ${data.names?.joueur2 || "?"})`);
