@@ -1,56 +1,30 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import { getDatabase, ref, get, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { launchGame, createGame, clearGame } from "./memory-core.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
-  authDomain: "memorygame-70305.firebaseapp.com",
-  databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "memorygame-70305",
-  storageBucket: "memorygame-70305.appspot.com",
-  messagingSenderId: "700177553228",
-  appId: "1:700177553228:web:4a750936d2866eeface1e9"
-};
+async function setupSession() {
+  const name = prompt("Entrez votre nom :");
+  if (!name) return;
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const gameRef = ref(db, "game");
+  const data = await fetch("https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app/game.json").then(r => r.json());
+  const player1 = data?.sessions?.joueur1;
+  const player2 = data?.sessions?.joueur2;
 
-let player;
-let sessionId = localStorage.getItem("memory_session_id") || crypto.randomUUID();
-localStorage.setItem("memory_session_id", sessionId);
-sessionStorage.setItem("sessionId", sessionId);
-
-async function initSession() {
-  const snap = await get(gameRef);
-  const data = snap.val();
-  const nom = prompt("Entrez votre nom :");
-  const sessionId = sessionStorage.getItem("sessionId");
-
-  if (!data) {
-    player = "joueur1";
-    await set(gameRef, {
-      started: false,
-      sessions: { joueur1: sessionId },
-      noms: { joueur1: nom }
-    });
-  } else if (!data.sessions?.joueur2) {
-    player = "joueur2";
-    await update(gameRef, {
-      "sessions/joueur2": sessionId,
-      "noms/joueur2": nom
-    });
-  } else {
+  let role = "joueur1";
+  if (player1 && !player2) role = "joueur2";
+  else if (player1 && player2) {
     alert("Deux joueurs sont déjà connectés.");
     return;
   }
 
-  sessionStorage.setItem("player", player);
-  sessionStorage.setItem("nomJoueur", nom);
-  document.getElementById("reset-button").disabled = player !== "joueur1";
-
-  import("./memory-core.js").then(module => {
-    module.initGame(player, db, gameRef);
+  await createGame(name, role);
+  document.getElementById("reset-button").disabled = role !== "joueur1";
+  document.getElementById("reset-button").addEventListener("click", async () => {
+    if (confirm("Voulez-vous réinitialiser la partie ?")) {
+      await clearGame();
+      window.location.reload();
+    }
   });
+
+  launchGame();
 }
 
-initSession();
+setupSession();
