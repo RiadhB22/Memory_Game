@@ -1,41 +1,56 @@
-import { get, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getDatabase, ref, get, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-export async function getOrCreatePlayer(gameRef) {
-  const player = sessionStorage.getItem("player");
-  const name = localStorage.getItem("name");
-  const { child } = await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js");
+const firebaseConfig = {
+  apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
+  authDomain: "memorygame-70305.firebaseapp.com",
+  databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "memorygame-70305",
+  storageBucket: "memorygame-70305.appspot.com",
+  messagingSenderId: "700177553228",
+  appId: "1:700177553228:web:4a750936d2866eeface1e9"
+};
 
-  const getName = async (label) => {
-    let n = "";
-    while (!n) {
-      n = prompt(`Entrez votre nom (${label}) :`).trim();
-    }
-    localStorage.setItem("name", n);
-    return n;
-  };
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const gameRef = ref(db, "game");
 
+let player;
+let sessionId = localStorage.getItem("memory_session_id") || crypto.randomUUID();
+localStorage.setItem("memory_session_id", sessionId);
+sessionStorage.setItem("sessionId", sessionId);
+
+async function initSession() {
   const snap = await get(gameRef);
   const data = snap.val();
+  const nom = prompt("Entrez votre nom :");
+  const sessionId = sessionStorage.getItem("sessionId");
 
-  if (!player) {
-    const p1 = data?.names?.joueur1;
-    const p2 = data?.names?.joueur2;
-
-    if (!p1) {
-      const name1 = name || await getName("Joueur 1");
-      await set(child(gameRef, "names/joueur1"), name1);
-      sessionStorage.setItem("player", "joueur1");
-      return "joueur1";
-    } else if (!p2) {
-      const name2 = name || await getName("Joueur 2");
-      await set(child(gameRef, "names/joueur2"), name2);
-      sessionStorage.setItem("player", "joueur2");
-      return "joueur2";
-    } else {
-      alert("Deux joueurs sont déjà connectés.");
-      throw new Error("Session complète.");
-    }
+  if (!data) {
+    player = "joueur1";
+    await set(gameRef, {
+      started: false,
+      sessions: { joueur1: sessionId },
+      noms: { joueur1: nom }
+    });
+  } else if (!data.sessions?.joueur2) {
+    player = "joueur2";
+    await update(gameRef, {
+      "sessions/joueur2": sessionId,
+      "noms/joueur2": nom
+    });
+  } else {
+    alert("Deux joueurs sont déjà connectés.");
+    return;
   }
 
-  return player;
+  sessionStorage.setItem("player", player);
+  sessionStorage.setItem("nomJoueur", nom);
+  document.getElementById("reset-button").disabled = player !== "joueur1";
+
+  import("./memory-core.js").then(module => {
+    module.initGame(player, db, gameRef);
+  });
 }
+
+initSession();
