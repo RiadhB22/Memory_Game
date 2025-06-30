@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebas
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { initGame, renderGame, resetGame } from "./memory-core.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAV8RMYwJ4-r5oGn6I1zPsVDTXkQE-GRpM",
   authDomain: "memorygame-70305.firebaseapp.com",
@@ -13,7 +12,6 @@ const firebaseConfig = {
   appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
-// Init Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const gameRef = ref(db, "game");
@@ -31,7 +29,7 @@ async function detectPlayer() {
   const { get, update } = await import("https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js");
   const snap = await get(gameRef);
   const data = snap.val() || {};
-  const nom = prompt("Entrez votre nom :");
+  const nom = prompt(`Entrez votre nom :\n(Joueur 1: ${data.names?.joueur1 || "?"}, Joueur 2: ${data.names?.joueur2 || "?"})`);
 
   if (!data.names?.joueur1) {
     currentPlayer = "joueur1";
