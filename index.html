@@ -4,14 +4,44 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Jeu Memory : TAKWEEN</h1>
-  <div id="header">Chargement...</div>
-  <div id="game" class="grid"></div>
-  <button id="reset-button">🔄 Réinitialiser</button>
+  <h1>🧠 Jeu Memory : TAKWEEN</h1>
+  <div id="header" class="header"></div>
+  <div id="game" class="game-grid"></div>
+  <button id="reset-button" disabled>🔄 Réinitialiser</button>
 
-  <script type="module" src="session.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    import { initGame, renderGame, resetGame } from "./memory-core.js";
+    import { getOrCreatePlayer } from "./session.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDox4RdnmMa8CHzqRbD4KsENGB_4bGAF5c",
+      authDomain: "memorygame-70305.firebaseapp.com",
+      databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "memorygame-70305",
+      storageBucket: "memorygame-70305.appspot.com",
+      messagingSenderId: "526801380061",
+      appId: "1:526801380061:web:427f839a58a6c60404a54f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const gameRef = ref(db, "game");
+
+    const currentPlayer = await getOrCreatePlayer(gameRef);
+    await initGame(gameRef);
+
+    onValue(gameRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+      renderGame(data, currentPlayer, gameRef);
+    });
+
+    document.getElementById("reset-button").addEventListener("click", () => resetGame(gameRef));
+  </script>
 </body>
 </html>
