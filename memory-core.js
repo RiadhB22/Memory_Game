@@ -11,7 +11,16 @@ export async function initGame(gameRef) {
       cards.push({ id: i, img: `files/${i}-2.jpg` });
     }
     const shuffled = cards.sort(() => 0.5 - Math.random());
-    await set(gameRef, { board: shuffled, flipped: [], matched: [], moves: 0, scores: { joueur1: 0, joueur2: 0 }, names: {}, turn: 'joueur1' });
+    await set(gameRef, {
+      board: shuffled,
+      flipped: [],
+      matched: [],
+      moves: 0,
+      scores: { joueur1: 0, joueur2: 0 },
+      names: {},
+      turn: 'joueur1',
+      startTime: Date.now()
+    });
   }
 }
 
@@ -30,8 +39,8 @@ export function renderGame(data, currentPlayer, gameRef) {
     cardEl.dataset.index = index;
     cardEl.innerHTML = `
       <div class="inner ${isFlipped || isMatched ? 'flipped' : ''} ${isMatched ? 'matched' : ''}">
-        <div class="front"><img src="${card.img}" alt=""></div>
-        <div class="back"><img src="files/verso.jpg" alt=""></div>
+        <div class="front"><img src="files/verso.jpg" alt=""></div>
+        <div class="back"><img src="${card.img}" alt=""></div>
       </div>`;
 
     cardEl.addEventListener("click", () => {
@@ -59,11 +68,13 @@ function updateHeader(data, currentPlayer) {
   const score1 = data.scores?.joueur1 || 0;
   const score2 = data.scores?.joueur2 || 0;
   const moveCount = data.moves || 0;
+  const duration = data.startTime ? Math.floor((Date.now() - data.startTime) / 1000) : 0;
+  const startTime = data.startTime ? new Date(data.startTime).toLocaleTimeString() : '--:--';
 
   const p1 = `<span id="player1-name" class="${data.turn === 'joueur1' ? 'active' : ''}">${data.turn === 'joueur1' ? '🖐️ ' : ''}👤 ${name1} : <span id="score1">${score1}</span></span>`;
   const p2 = `<span id="player2-name" class="${data.turn === 'joueur2' ? 'active' : ''}">${data.turn === 'joueur2' ? '🖐️ ' : ''}👤 ${name2} : <span id="score2">${score2}</span></span>`;
 
-  header.innerHTML = `${p1} | ${p2} | Coups : <span id="move-count">${moveCount}</span>`;
+  header.innerHTML = `${p1} | ${p2} | Coups : <span id="move-count">${moveCount}</span> | Temps : <span>${duration}s</span> | Début : <span>${startTime}</span>`;
 
   const btn = document.getElementById("reset-button");
   if (btn) btn.disabled = currentPlayer !== "joueur1";
