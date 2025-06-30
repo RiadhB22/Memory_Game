@@ -11,7 +11,7 @@ export async function initGame(gameRef) {
       cards.push({ id: i, img: `files/${i}-2.jpg` });
     }
     const shuffled = cards.sort(() => 0.5 - Math.random());
-    await set(gameRef, { ...data, board: shuffled, flipped: [], matched: [], moves: 0 });
+    await set(gameRef, { board: shuffled, flipped: [], matched: [], moves: 0, scores: { joueur1: 0, joueur2: 0 }, names: {}, turn: 'joueur1' });
   }
 }
 
@@ -112,5 +112,7 @@ async function checkMatch([i1, i2], data, gameRef) {
 export async function resetGame(gameRef) {
   const { remove } = await import('https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js');
   await remove(gameRef);
+  localStorage.clear();
+  sessionStorage.clear();
   window.location.reload();
 }
