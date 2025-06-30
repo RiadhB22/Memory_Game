@@ -23,19 +23,23 @@ if (!sessionId) {
 }
 sessionStorage.setItem("sessionId", sessionId);
 
-let currentPlayer;
+let currentPlayer = null;
 
 async function detectPlayer() {
   const snap = await get(gameRef);
   const data = snap.val() || {};
   const nom = prompt(`Entrez votre nom :\n(Joueur 1: ${data.names?.joueur1 || "?"}, Joueur 2: ${data.names?.joueur2 || "?"})`);
 
-  if (!data.names?.joueur1) {
+  if (!data.names || !data.names.joueur1) {
     currentPlayer = "joueur1";
-    await update(gameRef, { names: { ...data.names, joueur1: nom } });
-  } else if (!data.names?.joueur2) {
+    await update(gameRef, {
+      names: { ...data.names, joueur1: nom }
+    });
+  } else if (!data.names.joueur2) {
     currentPlayer = "joueur2";
-    await update(gameRef, { names: { ...data.names, joueur2: nom } });
+    await update(gameRef, {
+      names: { ...data.names, joueur2: nom }
+    });
   } else {
     alert("Deux joueurs sont déjà connectés.");
     return false;
