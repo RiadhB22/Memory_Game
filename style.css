@@ -1,9 +1,9 @@
 body {
   font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
+  background-color: #f0f0f0;
   text-align: center;
-  padding: 1rem;
   margin: 0;
+  padding: 1rem;
 }
 
 h1 {
@@ -13,7 +13,7 @@ h1 {
 }
 
 #header {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin-bottom: 1rem;
 }
 
@@ -22,7 +22,7 @@ h1 {
 }
 
 .active {
-  color: green;
+  color: #1a8917;
   font-weight: bold;
   font-size: 1.3rem;
 }
@@ -31,7 +31,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(8, 80px);
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 1rem;
 }
 
@@ -73,13 +73,14 @@ h1 {
 }
 
 #reset-button {
+  padding: 0.7rem 1.4rem;
   background-color: #d9534f;
   color: white;
   border: none;
-  padding: 0.7rem 1.5rem;
   border-radius: 6px;
   font-size: 1rem;
   cursor: pointer;
+  margin-top: 1rem;
 }
 
 #reset-button:disabled {
