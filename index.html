@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>🎮 Jeu Memory : TAKWEEN</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Jeu Memory : TAKWEEN</h1>
-  <div id="header" class="header"></div>
-  <div id="waiting-message">⌛ En attente de l'autre joueur...</div>
-  <div id="game" class="game"></div>
-  <button id="reset-button" disabled>🔁 Réinitialiser</button>
+  <h1>🎮 Jeu Memory : TAKWEEN</h1>
+  <div id="header">
+    <!-- noms, scores, temps, etc. seront ajoutés dynamiquement -->
+  </div>
+  <div id="waiting-message" style="display: none;">⌛ En attente de l'autre joueur...</div>
+  <div id="game" class="grid"></div>
+  <button id="reset-button" disabled>🔄 Réinitialiser</button>
   <script type="module" src="session.js"></script>
 </body>
 </html>
