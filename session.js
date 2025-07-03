@@ -3,12 +3,16 @@ import { launchGame, createGame, clearGame } from "./memory-core.js";
 async function setup() {
   const res = await fetch("https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app/game.json");
   const data = await res.json();
-  const player1 = data?.sessions?.joueur1;
-  const player2 = data?.sessions?.joueur2;
+  const sessionId = crypto.randomUUID();
+  sessionStorage.setItem("sessionId", sessionId);
 
-  let role;
-  if (!player1) role = "joueur1";
-  else if (!player2) role = "joueur2";
+  const current1 = data?.sessions?.joueur1;
+  const current2 = data?.sessions?.joueur2;
+
+  let role = null;
+
+  if (!current1) role = "joueur1";
+  else if (!current2) role = "joueur2";
   else {
     alert("❌ Deux joueurs sont déjà connectés.");
     return;
@@ -18,28 +22,32 @@ async function setup() {
   if (!name) return;
 
   sessionStorage.setItem("player", role);
+
+  // Crée ou met à jour la base
   await createGame(name, role);
 
-  const waitingEl = document.getElementById("waiting-message");
-  if (role === "joueur1" && !player2) {
-    waitingEl.style.display = "block";
-    waitingEl.textContent = "⌛ En attente de l'autre joueur...";
+  // Affiche le message d’attente seulement si joueur1 et pas encore joueur2
+  const wait = document.getElementById("waiting-message");
+  if (role === "joueur1" && !current2) {
+    wait.style.display = "block";
+    wait.textContent = "⌛ En attente de l'autre joueur...";
   } else {
-    waitingEl.style.display = "none";
+    wait.style.display = "none";
   }
 
+  // Bouton de reset activé uniquement pour joueur1
   const resetBtn = document.getElementById("reset-button");
   if (role === "joueur1") {
     resetBtn.disabled = false;
     resetBtn.onclick = async () => {
-      const confirmReset = confirm("Voulez-vous vraiment réinitialiser la partie ?");
-      if (confirmReset) {
+      if (confirm("Voulez-vous vraiment recommencer ?")) {
         await clearGame();
         window.location.reload();
       }
     };
   }
 
+  // Lancement du jeu
   launchGame();
 }
 
