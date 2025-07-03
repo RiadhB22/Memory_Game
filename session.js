@@ -20,7 +20,6 @@ async function setup() {
   sessionStorage.setItem("player", role);
   await createGame(name, role);
 
-  // ✅ Afficher le message d'attente uniquement si joueur1 est connecté seul
   const waitingEl = document.getElementById("waiting-message");
   if (role === "joueur1" && !player2) {
     waitingEl.style.display = "block";
@@ -29,7 +28,6 @@ async function setup() {
     waitingEl.style.display = "none";
   }
 
-  // ✅ Activer le bouton seulement pour joueur1
   const resetBtn = document.getElementById("reset-button");
   if (role === "joueur1") {
     resetBtn.disabled = false;
