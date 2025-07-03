@@ -1,30 +1,35 @@
 import { launchGame, createGame, clearGame } from "./memory-core.js";
 
-async function setupSession() {
-  const name = prompt("Entrez votre nom :");
-  if (!name) return;
-
-  const data = await fetch("https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app/game.json").then(r => r.json());
+async function setup() {
+  const res = await fetch("https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app/game.json");
+  const data = await res.json();
   const player1 = data?.sessions?.joueur1;
   const player2 = data?.sessions?.joueur2;
 
-  let role = "joueur1";
-  if (player1 && !player2) role = "joueur2";
-  else if (player1 && player2) {
+  let role;
+  if (!player1) role = "joueur1";
+  else if (!player2) role = "joueur2";
+  else {
     alert("Deux joueurs sont déjà connectés.");
     return;
   }
 
+  const name = prompt(`Entrez votre nom (${role}) :`);
+  if (!name) return;
+
+  sessionStorage.setItem("player", role);
   await createGame(name, role);
-  document.getElementById("reset-button").disabled = role !== "joueur1";
-  document.getElementById("reset-button").addEventListener("click", async () => {
-    if (confirm("Voulez-vous réinitialiser la partie ?")) {
+
+  if (role === "joueur1") {
+    document.getElementById("reset-button").disabled = false;
+    document.getElementById("reset-button").onclick = async () => {
       await clearGame();
       window.location.reload();
-    }
-  });
+    };
+  }
 
+  document.getElementById("waiting-message").style.display = "block";
   launchGame();
 }
 
-setupSession();
+setup();
