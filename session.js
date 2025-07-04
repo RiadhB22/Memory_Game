@@ -1,86 +1,56 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-import {
-  getDatabase, ref, get, set, update, onValue, remove
-} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-import { initGame, renderGame } from "./memory-core.js";
+// session.js
+import { ref, get, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { db } from "./firebase-init.js";
 
-const firebaseConfig = {
-  databaseURL: "https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app"
-};
+export const gameRef = ref(db, "game");
+export let player = localStorage.getItem("player") || "";
+export let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
+localStorage.setItem("sessionId", sessionId);
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const gameRef = ref(db, "game");
-let currentPlayer = null;
+export async function detectPlayerRole() {
+  const snapshot = await get(gameRef);
+  const data = snapshot.val();
+  const nom = prompt("Entrez votre nom :");
 
-async function setup() {
-  const snap = await get(gameRef);
-  const data = snap.val();
-  const id = crypto.randomUUID();
-
-  // Si aucune session n'existe
-  if (!data || !data.sessions?.joueur1 || !data.sessions?.joueur2) {
-    const name = prompt("Entrez votre nom :");
-
-    if (!data?.sessions?.joueur1) {
-      await update(gameRef, {
-        "sessions/joueur1": id,
-        "names/joueur1": name,
-        "scores/joueur1": 0,
-        "turn": "joueur1",
-        "started": false
-      });
-      currentPlayer = "joueur1";
-    } else if (!data.sessions?.joueur2) {
-      await update(gameRef, {
-        "sessions/joueur2": id,
-        "names/joueur2": name,
-        "scores/joueur2": 0,
-        "started": true,
-        "timeStart": Date.now()
-      });
-      currentPlayer = "joueur2";
-    }
-
-    // Créer le plateau s’il n’existe pas
-    await initGame(gameRef);
-
-    // Afficher immédiatement le jeu pour joueur 1
-    const updatedSnap = await get(gameRef);
-    renderGame(updatedSnap.val(), currentPlayer, gameRef);
+  if (!data || !data.sessions) {
+    player = "joueur1";
+    await update(gameRef, {
+      sessions: { joueur1: sessionId },
+      noms: { joueur1: nom }
+    });
+  } else if (!data.sessions.joueur1) {
+    player = "joueur1";
+    await update(gameRef, {
+      "sessions/joueur1": sessionId,
+      "noms/joueur1": nom
+    });
+  } else if (!data.sessions.joueur2) {
+    player = "joueur2";
+    await update(gameRef, {
+      "sessions/joueur2": sessionId,
+      "noms/joueur2": nom
+    });
   } else {
     alert("Deux joueurs sont déjà connectés.");
-    return;
+    return false;
   }
 
-  // Écoute Firebase pour synchroniser
-  onValue(gameRef, (snap) => {
-    const data = snap.val();
-    renderGame(data, currentPlayer, gameRef);
-    updateTime(data.timeStart);
-  });
+  localStorage.setItem("player", player);
+  return true;
+}
 
-  // Réinitialisation (seulement pour joueur1)
-  document.getElementById("reset-button").addEventListener("click", async () => {
-    if (currentPlayer !== "joueur1") return;
-    await remove(gameRef);
-    location.reload();
+export function listenToNames(updateNames) {
+  onValue(gameRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data?.noms) {
+      updateNames(data.noms);
+    }
   });
 }
 
-function updateTime(startTime) {
-  if (!startTime) return;
-  const durationEl = document.getElementById("duration");
-  const startEl = document.getElementById("start-time");
-
-  const startDate = new Date(startTime);
-  startEl.textContent = `${startDate.getHours()}:${startDate.getMinutes()}`;
-
-  setInterval(() => {
-    const now = Date.now();
-    const seconds = Math.floor((now - startTime) / 1000);
-    durationEl.textContent = `${seconds}s`;
-  }, 1000);
+export function resetGame() {
+  remove(gameRef);
+  localStorage.removeItem("player");
+  localStorage.removeItem("sessionId");
+  window.location.reload();
 }
-
-setup();

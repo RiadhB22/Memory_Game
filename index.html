@@ -2,26 +2,28 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Jeu Memory : TAKWEEN</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>?? Jeu Memory : TAKWEEN</h1>
-
-  <header>
-    <div id="player1-name" class="player-name">Joueur 1 : </div>
-    <div>?? <span id="score1">0</span></div>
-    <div id="player2-name" class="player-name">Joueur 2 : </div>
-    <div>?? <span id="score2">0</span></div>
-    <div>?? Coups : <span id="move-count">0</span></div>
-    <div>? Temps : <span id="duration">0s</span></div>
-    <div>?? Début : <span id="start-time">--:--</span></div>
-    <button id="reset-button" disabled>?? Réinitialiser</button>
+  <header class="header">
+    <div id="player1-name" class="player">Joueur 1</div>
+    <div id="score1" class="score">0</div>
+    <div class="separator">|</div>
+    <div id="player2-name" class="player">Joueur 2</div>
+    <div id="score2" class="score">0</div>
+    <div class="separator">|</div>
+    <div id="move-count" class="info">Coups : 0</div>
+    <div id="timer" class="info">0s</div>
+    <div id="start-time" class="info">--:--</div>
+    <button id="reset-button">?? Réinitialiser</button>
   </header>
 
-  <div id="game"></div>
+  <div id="waiting-message">? En attente de l'autre joueur...</div>
+  <div id="game" class="game-grid"></div>
 
+  <script type="module" src="firebase-init.js"></script>
   <script type="module" src="session.js"></script>
+  <script type="module" src="memory-core.js"></script>
 </body>
 </html>
