@@ -1,32 +1,53 @@
-import { launchGame, createGame, clearGame } from './memory-core.js';
+// session.js
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const player = sessionStorage.getItem("player");
-  if (!player) {
-    let name = prompt("Entrez votre nom :");
-    if (!name) name = "Anonyme";
+const db = getDatabase();
+const gameRef = ref(db, 'game');
 
-    const role = (await checkRole()) === "joueur1" ? "joueur2" : "joueur1";
-    sessionStorage.setItem("player", role);
-    await createGame(name, role);
+let sessionId = localStorage.getItem("memory_session_id");
+if (!sessionId) {
+  sessionId = crypto.randomUUID();
+  localStorage.setItem("memory_session_id", sessionId);
+}
+sessionStorage.setItem("sessionId", sessionId);
+
+export async function detectPlayerRole() {
+  const snapshot = await get(gameRef);
+  const data = snapshot.val();
+  const sessionId = sessionStorage.getItem("sessionId");
+
+  if (data && data.sessions && data.sessions.joueur1 === sessionId) {
+    sessionStorage.setItem("player", "joueur1");
+    return "joueur1";
   }
 
-  launchGame();
+  if (data && data.sessions && data.sessions.joueur2 === sessionId) {
+    sessionStorage.setItem("player", "joueur2");
+    return "joueur2";
+  }
 
-  document.getElementById("resetBtn").addEventListener("click", async () => {
-    const currentPlayer = sessionStorage.getItem("player");
-    if (currentPlayer === "joueur1") {
-      await clearGame();
-      location.reload();
-    } else {
-      alert("Seul le Joueur 1 peut réinitialiser la partie.");
-    }
-  });
-});
+  const isFirst = !data || !data.sessions || !data.sessions.joueur1;
+  const nom = prompt(`Entrez votre nom (${isFirst ? 'Joueur 1' : 'Joueur 2'}) :`).trim();
 
-async function checkRole() {
-  const res = await fetch("https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app/game.json");
-  const data = await res.json();
-  if (!data || !data.sessions || !data.sessions.joueur1) return "joueur1";
-  return "joueur2";
+  if (!nom) {
+    alert("Nom invalide");
+    return;
+  }
+
+  const player = isFirst ? "joueur1" : "joueur2";
+  sessionStorage.setItem("player", player);
+  sessionStorage.setItem("nom" + player.charAt(0).toUpperCase() + player.slice(1), nom);
+
+  const sessions = {
+    ...(data?.sessions || {}),
+    [player]: sessionId
+  };
+
+  const noms = {
+    ...(data?.noms || {}),
+    [player]: nom
+  };
+
+  await update(gameRef, { sessions, noms });
+  return player;
 }
