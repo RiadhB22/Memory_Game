@@ -6,8 +6,7 @@ const gameRef = ref(db, 'game');
 
 const sounds = {
   flip1: new Audio("files/flip1.mp3"),
-  flip2: new Audio("files/flip2.mp3"),
-  error: new Audio("files/error.mp3")
+  flip2: new Audio("files/flip2.mp3")
 };
 
 const images = [];
@@ -23,11 +22,11 @@ let sessionId = sessionStorage.getItem("sessionId");
 function renderHeader(data) {
   const header = document.getElementById("header");
   header.innerHTML = `
-    <span class="player ${data.turn === 'joueur1' ? 'active' : ''}">🧑 ${data.names?.joueur1 || "Joueur 1"} : <strong>${data.scores?.joueur1 || 0}</strong></span>
+    <span class="${data.turn === 'joueur1' ? 'active' : ''}">🧑 ${data.names?.joueur1 || "Joueur 1"} : <strong>${data.scores?.joueur1 || 0}</strong></span>
     <span>🕒 Début : ${new Date(data.timeStart).toLocaleTimeString()}</span>
     <span>🎯 Coups : ${data.moves}</span>
-    <span>⏱ Temps : <span id="duration">0s</span></span>
-    <span class="player ${data.turn === 'joueur2' ? 'active' : ''}">🧑 ${data.names?.joueur2 || "Joueur 2"} : <strong>${data.scores?.joueur2 || 0}</strong></span>
+    <span>⏱ Durée : <span id="duration">0s</span></span>
+    <span class="${data.turn === 'joueur2' ? 'active' : ''}">🧑 ${data.names?.joueur2 || "Joueur 2"} : <strong>${data.scores?.joueur2 || 0}</strong></span>
   `;
 }
 
@@ -71,7 +70,6 @@ async function checkMatch([i1, i2], data) {
     scores[turn] += 1;
   } else {
     turn = turn === "joueur1" ? "joueur2" : "joueur1";
-    sounds.error.play();
   }
   await update(gameRef, {
     flipped: [],
