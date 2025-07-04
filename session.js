@@ -1,42 +1,32 @@
-import { launchGame, createGame, clearGame } from "./memory-core.js";
+import { launchGame, createGame, clearGame } from './memory-core.js';
 
-async function setup() {
-  const res = await fetch("https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app/game.json");
-  const data = await res.json();
+document.addEventListener("DOMContentLoaded", async () => {
+  const player = sessionStorage.getItem("player");
+  if (!player) {
+    let name = prompt("Entrez votre nom :");
+    if (!name) name = "Anonyme";
 
-  let role = null;
-  if (!data?.sessions?.joueur1) role = "joueur1";
-  else if (!data?.sessions?.joueur2) role = "joueur2";
-  else {
-    alert("❌ Deux joueurs sont déjà connectés.");
-    return;
-  }
-
-  const name = prompt(`Entrez votre nom (${role}) :`);
-  if (!name) return;
-
-  await createGame(name, role);
-
-  if (role === "joueur1" && !data?.sessions?.joueur2) {
-    const wait = document.getElementById("waiting-message");
-    if (wait) {
-      wait.style.display = "block";
-      wait.textContent = "⌛ En attente de l'autre joueur...";
-    }
-  }
-
-  const resetBtn = document.getElementById("reset-button");
-  if (role === "joueur1") {
-    resetBtn.disabled = false;
-    resetBtn.onclick = async () => {
-      if (confirm("🔄 Réinitialiser la partie ?")) {
-        await clearGame();
-        window.location.reload();
-      }
-    };
+    const role = (await checkRole()) === "joueur1" ? "joueur2" : "joueur1";
+    sessionStorage.setItem("player", role);
+    await createGame(name, role);
   }
 
   launchGame();
-}
 
-setup();
+  document.getElementById("resetBtn").addEventListener("click", async () => {
+    const currentPlayer = sessionStorage.getItem("player");
+    if (currentPlayer === "joueur1") {
+      await clearGame();
+      location.reload();
+    } else {
+      alert("Seul le Joueur 1 peut réinitialiser la partie.");
+    }
+  });
+});
+
+async function checkRole() {
+  const res = await fetch("https://memorygame-70305-default-rtdb.europe-west1.firebasedatabase.app/game.json");
+  const data = await res.json();
+  if (!data || !data.sessions || !data.sessions.joueur1) return "joueur1";
+  return "joueur2";
+}
