@@ -1,24 +1,17 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Jeu Memory : TAKWEEN</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="session.js" defer></script>
 </head>
 <body>
-  <h1>🧠 Jeu Memory : TAKWEEN</h1>
-  <div id="header" class="header">
-    <span id="joueur1">Joueur 1 : -</span>
-    <span id="score1">Score : 0</span>
-    <span id="startTime">🕒 Heure de début : --:--</span>
-    <span id="moves">🎯 Coups : 0</span>
-    <span id="duration">⏱ Durée : 0s</span>
-    <button id="resetBtn" disabled>🔄 Réinitialiser</button>
-    <span id="joueur2">Joueur 2 : -</span>
-    <span id="score2">Score : 0</span>
+  <h1>Jeu Memory : TAKWEEN</h1>
+  <div id="header"></div>
+  <div id="game" class="board"></div>
+  <div class="controls">
+    <button id="reset">🔄 Réinitialiser</button>
   </div>
-  <div id="game" class="game-board"></div>
-  <script type="module" src="session.js"></script>
 </body>
 </html>
