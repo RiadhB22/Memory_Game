@@ -1,5 +1,12 @@
 import { db } from "./firebase-init.js";
-import { ref, set, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import {
+  ref,
+  set,
+  onValue,
+  update,
+  remove,
+  get,
+} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 import { detectPlayerRole } from "./session.js";
 
 const gameRef = ref(db, "game");
@@ -46,7 +53,11 @@ async function init() {
     renderGame(data);
     updateStatus(data);
 
-    if (!data.started && data.sessions?.joueur1 && data.sessions?.joueur2) {
+    if (
+      !data.started &&
+      data.sessions?.joueur1 &&
+      data.sessions?.joueur2
+    ) {
       set(gameRef, {
         ...data,
         started: true,
@@ -64,10 +75,12 @@ async function init() {
 
 function updateNames(data) {
   if (data.noms?.joueur1) {
-    document.getElementById("player1-name").textContent = "👤 " + data.noms.joueur1 + " :";
+    document.getElementById("player1-name").textContent =
+      "👤 " + data.noms.joueur1 + " :";
   }
   if (data.noms?.joueur2) {
-    document.getElementById("player2-name").textContent = "👤 " + data.noms.joueur2 + " :";
+    document.getElementById("player2-name").textContent =
+      "👤 " + data.noms.joueur2 + " :";
   }
 }
 
@@ -83,7 +96,9 @@ function renderGame(data) {
     cardEl.className = "card";
     cardEl.dataset.index = index;
     cardEl.innerHTML = `
-      <div class="inner ${isFlipped || isMatched ? "flipped" : ""} ${isMatched ? "matched" : ""}">
+      <div class="inner ${isFlipped || isMatched ? "flipped" : ""} ${
+      isMatched ? "matched" : ""
+    }">
         <div class="front"><img src="${card.img}" alt="carte"></div>
         <div class="back"><img src="files/verso.jpg" alt="verso"></div>
       </div>`;
@@ -139,11 +154,16 @@ function checkMatch(indices, data) {
 }
 
 function updateStatus(data) {
-  document.getElementById("score1").textContent = data.scores?.joueur1 || 0;
-  document.getElementById("score2").textContent = data.scores?.joueur2 || 0;
-  document.getElementById("move-count").textContent = data.moves || 0;
+  document.getElementById("score1").textContent =
+    data.scores?.joueur1 || 0;
+  document.getElementById("score2").textContent =
+    data.scores?.joueur2 || 0;
+  document.getElementById("move-count").textContent =
+    data.moves || 0;
 
-  const elapsed = Math.floor((Date.now() - (data.timeStart || Date.now())) / 1000);
+  const elapsed = Math.floor(
+    (Date.now() - (data.timeStart || Date.now())) / 1000
+  );
   document.getElementById("timer").textContent = `${elapsed}s`;
 
   const p1 = document.getElementById("player1-name");
