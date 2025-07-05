@@ -1,64 +1,66 @@
 body {
   font-family: Arial, sans-serif;
+  background: #f2f2f2;
   text-align: center;
-  background: #f8f8f8;
   margin: 0;
   padding: 0;
 }
 
-.header {
+header {
+  background-color: #4CAF50;
+  color: white;
+  padding: 1rem;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  background-color: #e0e0e0;
-  padding: 10px;
-  font-size: 1.1em;
-  gap: 10px;
 }
 
-.header .player.active {
-  color: #2196f3;
+#players {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+  font-size: 1rem;
+}
+
+#reset-button {
+  background: white;
+  border: none;
+  padding: 0.5rem 1rem;
   font-weight: bold;
+  cursor: pointer;
+  border-radius: 0.3rem;
 }
 
-.separator {
-  margin: 0 10px;
-  color: #555;
-}
-
-.info {
-  margin: 0 5px;
+.active-player::after {
+  content: ' ✋';
+  font-size: 1.5rem;
 }
 
 #game {
   display: grid;
-  grid-template-columns: repeat(8, 90px);
-  grid-gap: 10px;
+  grid-template-columns: repeat(8, 70px);
+  gap: 10px;
   justify-content: center;
-  padding: 20px;
+  margin: 2rem;
 }
 
 .card {
-  width: 90px;
-  height: 90px;
-  perspective: 1000px;
+  width: 70px;
+  height: 70px;
+  perspective: 600px;
 }
 
 .inner {
   width: 100%;
   height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
   transition: transform 0.5s;
+  transform-style: preserve-3d;
+  position: relative;
 }
 
 .inner.flipped {
   transform: rotateY(180deg);
-}
-
-.inner.matched {
-  border: 2px solid green;
 }
 
 .front, .back {
@@ -68,10 +70,8 @@ body {
   backface-visibility: hidden;
 }
 
-.front img, .back img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.back {
+  background: #ccc;
 }
 
 .front {
