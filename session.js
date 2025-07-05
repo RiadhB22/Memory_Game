@@ -1,79 +1,45 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
-  text-align: center;
-  margin: 0;
-  padding: 0;
-}
+// 📁 session.js
+import { db } from "./firebase-init.js";
+import { ref, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-header {
-  background-color: #4CAF50;
-  color: white;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-}
+const gameRef = ref(db, "game");
 
-#players {
-  flex: 1;
-  display: flex;
-  justify-content: space-around;
-  font-size: 1rem;
-}
+export async function detectPlayerRole() {
+  let sessionId = localStorage.getItem("memory_session_id");
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem("memory_session_id", sessionId);
+  }
+  sessionStorage.setItem("sessionId", sessionId);
 
-#reset-button {
-  background: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: 0.3rem;
-}
+  const snap = await get(gameRef);
+  const data = snap.val() || {};
 
-.active-player::after {
-  content: ' ✋';
-  font-size: 1.5rem;
-}
+  const joueur1 = data.sessions?.joueur1;
+  const joueur2 = data.sessions?.joueur2;
 
-#game {
-  display: grid;
-  grid-template-columns: repeat(8, 70px);
-  gap: 10px;
-  justify-content: center;
-  margin: 2rem;
-}
+  const nom = prompt(`Entrez votre nom (${!joueur1 ? 'Joueur 1' : 'Joueur 2'}) :`);
 
-.card {
-  width: 70px;
-  height: 70px;
-  perspective: 600px;
-}
+  if (!joueur1) {
+    await update(gameRef, {
+      sessions: { ...data.sessions, joueur1: sessionId },
+      noms: { ...data.noms, joueur1: nom }
+    });
+    sessionStorage.setItem("player", "joueur1");
+    sessionStorage.setItem("nomJoueur1", nom);
+    return "joueur1";
+  }
 
-.inner {
-  width: 100%;
-  height: 100%;
-  transition: transform 0.5s;
-  transform-style: preserve-3d;
-  position: relative;
-}
+  if (!joueur2 && joueur1 !== sessionId) {
+    await update(gameRef, {
+      sessions: { ...data.sessions, joueur2: sessionId },
+      noms: { ...data.noms, joueur2: nom }
+    });
+    sessionStorage.setItem("player", "joueur2");
+    sessionStorage.setItem("nomJoueur2", nom);
+    return "joueur2";
+  }
 
-.inner.flipped {
-  transform: rotateY(180deg);
-}
-
-.front, .back {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  backface-visibility: hidden;
-}
-
-.back {
-  background: #ccc;
-}
-
-.front {
-  transform: rotateY(180deg);
+  alert("Deux joueurs sont déjà connectés.");
+  return null;
 }
