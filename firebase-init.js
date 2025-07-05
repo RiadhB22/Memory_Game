@@ -1,4 +1,4 @@
-// 📄 firebase-init.js
+// 📁 firebase-init.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
@@ -12,5 +12,5 @@ const firebaseConfig = {
   appId: "1:700177553228:web:4a750936d2866eeface1e9"
 };
 
-export const app = initializeApp(firebaseConfig);
-export const database = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+export const db = getDatabase(app);
