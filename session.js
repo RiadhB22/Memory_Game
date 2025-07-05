@@ -1,36 +1,79 @@
-// 📁 session.js
-import { db } from "./firebase-init.js";
-import { ref, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
 
-const gameRef = ref(db, "game");
+header {
+  background-color: #4CAF50;
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
-export async function detectPlayerRole() {
-  const snapshot = await get(gameRef);
-  const data = snapshot.val();
+#players {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+  font-size: 1rem;
+}
 
-  const sessionId = crypto.randomUUID();
-  sessionStorage.setItem("sessionId", sessionId);
+#reset-button {
+  background: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 0.3rem;
+}
 
-  const nom = prompt("Entrez votre nom :");
+.active-player::after {
+  content: ' ✋';
+  font-size: 1.5rem;
+}
 
-  let role;
-  if (!data || !data.sessions || !data.sessions.joueur1) {
-    role = "joueur1";
-  } else if (!data.sessions.joueur2) {
-    role = "joueur2";
-  } else {
-    alert("Deux joueurs sont déjà connectés.");
-    return null;
-  }
+#game {
+  display: grid;
+  grid-template-columns: repeat(8, 70px);
+  gap: 10px;
+  justify-content: center;
+  margin: 2rem;
+}
 
-  sessionStorage.setItem("player", role);
-  sessionStorage.setItem("nom" + role.charAt(0).toUpperCase() + role.slice(1), nom);
+.card {
+  width: 70px;
+  height: 70px;
+  perspective: 600px;
+}
 
-  const updates = {
-    ["sessions/" + role]: sessionId,
-    ["noms/" + role]: nom
-  };
+.inner {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s;
+  transform-style: preserve-3d;
+  position: relative;
+}
 
-  await update(gameRef, updates);
-  return role;
+.inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.front, .back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  backface-visibility: hidden;
+}
+
+.back {
+  background: #ccc;
+}
+
+.front {
+  transform: rotateY(180deg);
 }
