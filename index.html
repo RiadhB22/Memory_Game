@@ -1,26 +1,29 @@
+<!-- 📄 index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jeu Memory : TAKWEEN</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="header">
-    <div id="player1-name" class="player">Joueur 1</div>
-    <div id="score1" class="score">0</div>
-    <div class="separator">|</div>
-    <div id="player2-name" class="player">Joueur 2</div>
-    <div id="score2" class="score">0</div>
-    <div class="separator">|</div>
-    <div id="move-count" class="info">Coups : 0</div>
-    <div id="timer" class="info">0s</div>
-    <div id="start-time" class="info">--:--</div>
-    <button id="reset-button">?? R�initialiser</button>
+  <header>
+    <h1>Jeu Memory : TAKWEEN</h1>
+    <div class="players">
+      <span id="player1-name">👤 Joueur 1 :</span>
+      <span id="score1">0</span>
+      <span id="player2-name">👤 Joueur 2 :</span>
+      <span id="score2">0</span>
+      <span id="timer">⏱ 0s</span>
+      <span id="start-time">🕒</span>
+      <span id="move-count">🔁 0</span>
+    </div>
+    <button id="reset-button">🔁 Nouveau jeu</button>
   </header>
 
-  <div id="waiting-message">? En attente de l'autre joueur...</div>
-  <div id="game" class="game-grid"></div>
+  <div id="waiting-message" class="waiting">⌛ En attente de l'autre joueur...</div>
+  <div id="game" class="grid"></div>
 
   <script type="module" src="firebase-init.js"></script>
   <script type="module" src="session.js"></script>
