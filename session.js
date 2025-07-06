@@ -1,3 +1,4 @@
+// 📁 session.js
 import { db } from "./firebase-init.js";
 import { ref, get, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
