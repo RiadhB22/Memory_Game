@@ -1,148 +1,162 @@
 // 📁 memory-core.js
 import { db } from "./firebase-init.js";
-import { ref, set, onValue, update, get, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import {
+  ref,
+  onValue,
+  set,
+  update,
+  get,
+  child
+} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
 import { detectPlayerRole } from "./session.js";
 
 const gameRef = ref(db, "game");
-const board = document.getElementById("game");
-const score1 = document.getElementById("score1");
-const score2 = document.getElementById("score2");
-const moveCount = document.getElementById("move-count");
-const timer = document.getElementById("timer");
-const player1Name = document.getElementById("player1-name");
-const player2Name = document.getElementById("player2-name");
-const startTime = document.getElementById("start-time");
-const resetButton = document.getElementById("reset-button");
+const boardEl = document.getElementById("game");
+const moveCountEl = document.getElementById("move-count");
+const timerEl = document.getElementById("timer");
+const startTimeEl = document.getElementById("start-time");
+const score1El = document.getElementById("score1");
+const score2El = document.getElementById("score2");
+const name1El = document.getElementById("player1-name");
+const name2El = document.getElementById("player2-name");
+const resetBtn = document.getElementById("reset-button");
 
-let firstCard = null;
-let secondCard = null;
-let lockBoard = false;
-let currentPlayer = "joueur1";
-let moveCounter = 0;
-let matchedPairs = 0;
-let timerInterval;
-let startTimestamp;
+let cards = [], currentPlayer = null, canPlay = false, startTime = null, timerInterval = null;
 
-const totalPairs = 32;
+initGame();
 
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+async function initGame() {
+  currentPlayer = await detectPlayerRole();
+  if (!currentPlayer) return;
+
+  resetBtn.addEventListener("click", resetGame);
+
+  onValue(gameRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    name1El.textContent = data.noms?.joueur1 || "-";
+    name2El.textContent = data.noms?.joueur2 || "-";
+
+    if (!data.cards) return;
+    if (!cards.length) {
+      cards = data.cards;
+      renderBoard(cards);
+    }
+
+    updateUI(data);
+  });
+
+  const snap = await get(gameRef);
+  if (!snap.exists()) await setupNewGame();
+  else {
+    const data = snap.val();
+    if (!data.cards) await setupNewGame();
   }
-  return arr;
 }
 
-function createCards() {
-  const images = [];
-  for (let i = 1; i <= totalPairs; i++) {
-    images.push(i + ".png", i + ".png");
-  }
-  return shuffleArray(images);
-}
+function renderBoard(cards) {
+  boardEl.innerHTML = "";
+  cards.forEach((card, index) => {
+    const cardEl = document.createElement("div");
+    cardEl.className = "card";
+    cardEl.innerHTML = `
+      <div class="inner" data-index="${index}">
+        <div class="front" style="background-image: url('files/verso.jpg');"></div>
+        <div class="back" style="background-image: url('${card.img}')"></div>
+      </div>
+    `;
+    boardEl.appendChild(cardEl);
+  });
 
-function renderBoard(images) {
-  board.innerHTML = "";
-  images.forEach((img, index) => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.dataset.image = img;
-    card.dataset.index = index;
-    card.innerHTML = `
-      <div class="inner">
-        <div class="front"><img src="img/${img}" width="100%" height="100%"></div>
-        <div class="back"></div>
-      </div>`;
-    card.addEventListener("click", handleCardClick);
-    board.appendChild(card);
+  boardEl.querySelectorAll(".inner").forEach((el) => {
+    el.addEventListener("click", handleCardClick);
   });
 }
 
-function handleCardClick(e) {
-  if (lockBoard) return;
-  const card = e.currentTarget;
-  const inner = card.querySelector(".inner");
-  if (inner.classList.contains("flipped") || inner.classList.contains("matched")) return;
-  inner.classList.add("flipped");
-
-  if (!firstCard) {
-    firstCard = card;
-    return;
+async function setupNewGame() {
+  const images = [];
+  for (let i = 1; i <= 32; i++) {
+    images.push(`img/${i}.png`);
   }
+  const selected = images.slice(0, 32);
+  const deck = [...selected, ...selected]
+    .map((img) => ({ img, matched: false }))
+    .sort(() => Math.random() - 0.5);
 
-  secondCard = card;
-  lockBoard = true;
-  moveCounter++;
-  moveCount.textContent = moveCounter;
+  await set(gameRef, {
+    cards: deck,
+    moveCount: 0,
+    scores: { joueur1: 0, joueur2: 0 },
+    revealed: [],
+    activePlayer: "joueur1",
+    startTime: Date.now(),
+    noms: {},
+    sessions: {}
+  });
+}
 
-  const img1 = firstCard.dataset.image;
-  const img2 = secondCard.dataset.image;
+function updateUI(data) {
+  moveCountEl.textContent = data.moveCount;
+  score1El.textContent = data.scores?.joueur1 || 0;
+  score2El.textContent = data.scores?.joueur2 || 0;
 
-  if (img1 === img2) {
-    matchedPairs++;
-    firstCard.querySelector(".inner").classList.add("matched");
-    secondCard.querySelector(".inner").classList.add("matched");
-    updateScore();
-    resetTurn();
-  } else {
-    setTimeout(() => {
-      firstCard.querySelector(".inner").classList.remove("flipped");
-      secondCard.querySelector(".inner").classList.remove("flipped");
-      resetTurn();
+  startTime = data.startTime;
+  if (!timerInterval) {
+    timerInterval = setInterval(() => {
+      const now = Date.now();
+      const seconds = Math.floor((now - startTime) / 1000);
+      timerEl.textContent = `${seconds}s`;
     }, 1000);
   }
+  const date = new Date(startTime);
+  startTimeEl.textContent = date.toLocaleTimeString();
 }
 
-function resetTurn() {
-  firstCard = null;
-  secondCard = null;
-  lockBoard = false;
-}
+let flippedCards = [];
 
-function updateScore() {
-  const scoreSpan = currentPlayer === "joueur1" ? score1 : score2;
-  scoreSpan.textContent = parseInt(scoreSpan.textContent) + 1;
-}
+async function handleCardClick(e) {
+  if (flippedCards.length >= 2) return;
 
-function startGame(images) {
-  renderBoard(images);
-  moveCounter = 0;
-  matchedPairs = 0;
-  score1.textContent = "0";
-  score2.textContent = "0";
-  moveCount.textContent = "0";
-  clearInterval(timerInterval);
-  startTimestamp = Date.now();
-  startTime.textContent = new Date(startTimestamp).toLocaleTimeString();
-  timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
-    timer.textContent = `${elapsed}s`;
-  }, 1000);
-}
+  const inner = e.currentTarget;
+  const index = parseInt(inner.dataset.index);
 
-async function init() {
-  const player = await detectPlayerRole();
-  if (!player) return;
+  if (cards[index].matched || flippedCards.includes(index)) return;
 
-  const snap = await get(gameRef);
-  const data = snap.val();
-  const name1 = data?.noms?.joueur1 || "-";
-  const name2 = data?.noms?.joueur2 || "-";
-  player1Name.textContent = name1;
-  player2Name.textContent = name2;
+  flippedCards.push(index);
+  inner.classList.add("flipped");
 
-  if (data?.images) {
-    startGame(data.images);
-  } else {
-    const images = createCards();
-    await set(gameRef, { images, noms: { joueur1: name1, joueur2: name2 }, sessions: {} });
-    startGame(images);
+  if (flippedCards.length === 2) {
+    const [first, second] = flippedCards;
+    const firstCard = cards[first];
+    const secondCard = cards[second];
+
+    if (firstCard.img === secondCard.img) {
+      cards[first].matched = true;
+      cards[second].matched = true;
+      const scorePath = `scores/${currentPlayer}`;
+      const scoreSnap = await get(child(gameRef, scorePath));
+      const newScore = (scoreSnap.val() || 0) + 1;
+
+      await update(gameRef, {
+        cards,
+        [scorePath]: newScore,
+        moveCount: (await get(child(gameRef, "moveCount"))).val() + 1,
+      });
+
+      flippedCards = [];
+    } else {
+      setTimeout(() => {
+        boardEl.querySelectorAll(".inner")[first].classList.remove("flipped");
+        boardEl.querySelectorAll(".inner")[second].classList.remove("flipped");
+        flippedCards = [];
+      }, 1000);
+    }
   }
 }
 
-resetButton.addEventListener("click", async () => {
-  await remove(gameRef);
+async function resetGame() {
+  await setupNewGame();
   location.reload();
-});
-
-init();
+}
