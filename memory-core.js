@@ -40,11 +40,8 @@ async function initGame() {
     name2El.textContent = data.noms?.joueur2 || "-";
 
     if (!data.cards) return;
-    if (!cards.length) {
-      cards = data.cards;
-      renderBoard(cards);
-    }
-
+    cards = data.cards;
+    renderBoard(cards);
     updateUI(data);
   });
 
@@ -77,10 +74,10 @@ function renderBoard(cards) {
 
 async function setupNewGame() {
   const images = [];
-  for (let i = 1; i <= 32; i++) {
+  for (let i = 1; i <= 20; i++) {
     images.push(`img/${i}.png`);
   }
-  const selected = images.slice(0, 32);
+  const selected = images.slice(0, 20);
   const deck = [...selected, ...selected]
     .map((img) => ({ img, matched: false }))
     .sort(() => Math.random() - 0.5);
@@ -112,11 +109,21 @@ function updateUI(data) {
   }
   const date = new Date(startTime);
   startTimeEl.textContent = date.toLocaleTimeString();
+
+  if (data.activePlayer === currentPlayer) {
+    boardEl.classList.add("can-play");
+  } else {
+    boardEl.classList.remove("can-play");
+  }
 }
 
 let flippedCards = [];
 
 async function handleCardClick(e) {
+  const snap = await get(gameRef);
+  const data = snap.val();
+  if (data.activePlayer !== currentPlayer) return;
+
   if (flippedCards.length >= 2) return;
 
   const inner = e.currentTarget;
@@ -142,15 +149,20 @@ async function handleCardClick(e) {
       await update(gameRef, {
         cards,
         [scorePath]: newScore,
-        moveCount: (await get(child(gameRef, "moveCount"))).val() + 1,
+        moveCount: data.moveCount + 1,
       });
 
       flippedCards = [];
     } else {
-      setTimeout(() => {
+      setTimeout(async () => {
         boardEl.querySelectorAll(".inner")[first].classList.remove("flipped");
         boardEl.querySelectorAll(".inner")[second].classList.remove("flipped");
         flippedCards = [];
+
+        await update(gameRef, {
+          activePlayer: currentPlayer === "joueur1" ? "joueur2" : "joueur1",
+          moveCount: data.moveCount + 1
+        });
       }, 1000);
     }
   }
