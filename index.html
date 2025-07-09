@@ -1,27 +1,25 @@
-<!-- 📁 index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Jeu Memory : TAKWEEN</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>🧠 Jeu Memory : TAKWEEN</h1>
-    <div class="info-bar">
-      <span>👤 Joueur 1 : <span id="player1-name">-</span> | Score : <span id="score1">0</span></span>
-      <span>👤 Joueur 2 : <span id="player2-name">-</span> | Score : <span id="score2">0</span></span>
-      <span>🎯 Coups : <span id="move-count">0</span></span>
-      <span>⏱ Temps : <span id="timer">0s</span></span>
-      <span>🕒 Début : <span id="start-time">--:--:--</span></span>
-      <button id="reset-button">🔄 Réinitialiser</button>
-    </div>
-  </header>
-  <main>
-    <div id="game" class="board"></div>
-  </main>
+  <h1 id="game-title">🧠 Jeu Memory : TAKWEEN</h1>
+
+  <div class="top-bar">
+    <div id="player1-name" class="player-name">👤 Joueur 1: <span id="score1">0</span></div>
+    <div id="player2-name" class="player-name">👤 Joueur 2: <span id="score2">0</span></div>
+    <div id="move-count-container">Coups: <span id="move-count">0</span></div>
+    <div id="timer-container">⏱️ Durée: <span id="timer">0s</span></div>
+    <div id="start-time-container">🕒 Début: <span id="start-time">--:--:--</span></div>
+    <button id="reset-button">🔁 Recommencer</button>
+  </div>
+
+  <div id="game" class="game-board"></div>
+
   <script type="module" src="firebase-init.js"></script>
   <script type="module" src="session.js"></script>
   <script type="module" src="memory-core.js"></script>
