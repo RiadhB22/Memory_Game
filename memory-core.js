@@ -9,7 +9,7 @@ import {
   child
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
-import { detectPlayerRole } from "./session.js";
+import { detectPlayerRole, savePlayerName } from "./session.js";
 
 const gameRef = ref(db, "game");
 const boardEl = document.getElementById("game");
@@ -21,6 +21,7 @@ const score2El = document.getElementById("score2");
 const name1El = document.getElementById("player1-name");
 const name2El = document.getElementById("player2-name");
 const resetBtn = document.getElementById("reset-button");
+const titleEl = document.getElementById("game-title");
 
 let cards = [], currentPlayer = null, canPlay = false, startTime = null, timerInterval = null;
 
@@ -30,20 +31,22 @@ async function initGame() {
   currentPlayer = await detectPlayerRole();
   if (!currentPlayer) return;
 
+  await savePlayerName(currentPlayer);
+
+  resetBtn.disabled = currentPlayer !== "joueur1";
   resetBtn.addEventListener("click", resetGame);
 
   onValue(gameRef, (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
 
-    // Ne pas jouer tant qu'un seul joueur connecté
     if (!data.sessions || Object.keys(data.sessions).length < 2) {
       boardEl.innerHTML = '<div class="waiting">⌛ En attente de l\'autre joueur...</div>';
       return;
     }
 
-    name1El.textContent = data.noms?.joueur1 || "-";
-    name2El.textContent = data.noms?.joueur2 || "-";
+    name1El.textContent = data.noms?.joueur1 || "👤 Joueur 1";
+    name2El.textContent = data.noms?.joueur2 || "👤 Joueur 2";
 
     if (!data.cards) return;
     cards = data.cards;
@@ -81,12 +84,11 @@ function renderBoard(cards) {
 async function setupNewGame() {
   const images = [];
   for (let i = 1; i <= 20; i++) {
-    images.push(`img/${i}.png`);
+    images.push(`files/${i}-1.jpg`, `files/${i}-2.jpg`);
   }
-  const selected = images.slice(0, 20);
-  const deck = [...selected, ...selected]
-    .map((img) => ({ img, matched: false }))
-    .sort(() => Math.random() - 0.5);
+  const deck = images.map((img) => ({ img, matched: false }))
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 40);
 
   await set(gameRef, {
     cards: deck,
@@ -115,6 +117,14 @@ function updateUI(data) {
   }
   const date = new Date(startTime);
   startTimeEl.textContent = date.toLocaleTimeString();
+
+  if (data.activePlayer === "joueur1") {
+    name1El.classList.add("active-player");
+    name2El.classList.remove("active-player");
+  } else {
+    name2El.classList.add("active-player");
+    name1El.classList.remove("active-player");
+  }
 
   if (data.activePlayer === currentPlayer) {
     boardEl.classList.add("can-play");
@@ -175,6 +185,7 @@ async function handleCardClick(e) {
 }
 
 async function resetGame() {
+  if (currentPlayer !== "joueur1") return;
   await setupNewGame();
   location.reload();
 }
