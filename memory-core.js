@@ -36,6 +36,12 @@ async function initGame() {
     const data = snapshot.val();
     if (!data) return;
 
+    // Ne pas jouer tant qu'un seul joueur connecté
+    if (!data.sessions || Object.keys(data.sessions).length < 2) {
+      boardEl.innerHTML = '<div class="waiting">⌛ En attente de l\'autre joueur...</div>';
+      return;
+    }
+
     name1El.textContent = data.noms?.joueur1 || "-";
     name2El.textContent = data.noms?.joueur2 || "-";
 
